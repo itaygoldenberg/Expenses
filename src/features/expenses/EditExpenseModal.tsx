@@ -1,5 +1,6 @@
+import { KIND_LABELS } from '../../../shared/kinds'
 import type { Expense, ExpenseInput } from '../../../shared/types'
-import { Modal } from '../../components/Modal'
+import { Modal } from '../../ui'
 import { ExpenseForm, expenseToInput } from './ExpenseForm'
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
 
 export function EditExpenseModal({ expense, onSubmit, onSaved, onNotFound, onClose }: Props) {
   return (
-    <Modal title="עדכון הוצאה" onClose={onClose}>
+    <Modal title={`עדכון ${KIND_LABELS[expense.kind]}`} onClose={onClose}>
       <ExpenseForm
         mode="edit"
         initialValues={expenseToInput(expense)}

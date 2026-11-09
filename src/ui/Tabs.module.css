@@ -1,0 +1,48 @@
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.list {
+  position: relative;
+  display: flex;
+  border-bottom: 1px solid var(--glass-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-ui) var(--ease);
+}
+
+.tab:hover,
+.active {
+  color: var(--text);
+}
+
+/* Positioned from the physical left edge: offsetLeft is measured the same way */
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transition:
+    transform var(--dur-ui) var(--ease),
+    width var(--dur-ui) var(--ease);
+}
+
+.panel:focus-visible {
+  border-radius: var(--r-field);
+}

@@ -1,0 +1,104 @@
+dialog.dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border-radius: var(--r-xl);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  overflow: auto;
+  /* Stronger glass for overlays (DESIGN 2.3, level 2) */
+  background: rgb(20 27 43 / 0.82);
+}
+
+dialog.dialog[open] {
+  animation: var(--kf-pop-in) var(--dur-enter) var(--ease) both;
+}
+
+dialog.sm {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.dialog::backdrop {
+  background: rgb(4 7 14 / 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.panel {
+  position: relative;
+  padding: var(--space-6) var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.close:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass-fill);
+}
+
+.handle {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .panel {
+    padding: var(--space-6) var(--space-8) var(--space-8);
+  }
+}
+
+/* Phone: bottom sheet with a grab handle and safe-area padding */
+@media (max-width: 767.98px) {
+  dialog.sheet {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 85dvh;
+    margin: auto 0 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-bottom: none;
+  }
+
+  dialog.sheet[open] {
+    animation: var(--kf-sheet-up) var(--dur-enter) var(--ease) both;
+  }
+
+  .sheet .panel {
+    padding-top: var(--space-6);
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+
+  .sheet .handle {
+    display: block;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    translate: -50% 0;
+    border-radius: 2px;
+    background: rgb(255 255 255 / 0.25);
+  }
+}

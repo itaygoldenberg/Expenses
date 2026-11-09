@@ -1,21 +1,25 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { cx } from './cx'
 import styles from './Modal.module.css'
 
-type Props = {
+export type ModalProps = {
   title: string
   onClose: () => void
   children: ReactNode
   size?: 'md' | 'sm'
   /** Disables closing (Esc / X / backdrop) while a request is running. */
   busy?: boolean
+  /** On phones, slide up from the bottom (see Sheet). */
+  sheet?: boolean
 }
 
 /**
  * Modal dialog on top of the page, built on the native <dialog> element
  * (focus is kept inside, Esc closes, focus returns to the opener on close).
+ * An element marked with data-autofocus inside the dialog receives the first focus.
  */
-export function Modal({ title, onClose, children, size = 'md', busy = false }: Props) {
+export function Modal({ title, onClose, children, size = 'md', busy = false, sheet = false }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -25,6 +29,7 @@ export function Modal({ title, onClose, children, size = 'md', busy = false }: P
     const opener = document.activeElement as HTMLElement | null
     if (typeof dialog.showModal === 'function') dialog.showModal()
     else dialog.setAttribute('open', '') // fallback (older browsers / tests)
+    dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus()
     return () => {
       if (typeof dialog.close === 'function' && dialog.open) dialog.close()
       opener?.focus?.()
@@ -34,7 +39,7 @@ export function Modal({ title, onClose, children, size = 'md', busy = false }: P
   return (
     <dialog
       ref={ref}
-      className={`${styles.dialog} ${size === 'sm' ? styles.sm : ''}`}
+      className={cx('glass-2', styles.dialog, size === 'sm' && styles.sm, sheet && styles.sheet)}
       aria-labelledby={titleId}
       onCancel={(e) => {
         // Esc key: let React state decide when to unmount
@@ -47,6 +52,7 @@ export function Modal({ title, onClose, children, size = 'md', busy = false }: P
       }}
     >
       <div className={styles.panel}>
+        {sheet && <span className={styles.handle} aria-hidden="true" />}
         <div className={styles.header}>
           <h2 id={titleId} className={styles.title}>
             {title}
@@ -59,4 +65,9 @@ export function Modal({ title, onClose, children, size = 'md', busy = false }: P
       </div>
     </dialog>
   )
+}
+
+/** Bottom sheet on phones, regular modal on larger screens. Same interface as Modal. */
+export function Sheet(props: Omit<ModalProps, 'sheet'>) {
+  return <Modal {...props} sheet />
 }

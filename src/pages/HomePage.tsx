@@ -1,125 +1,165 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { ListChecks, PlusCircle } from 'lucide-react'
-import type { Expense } from '../../shared/types'
-import { createExpense, deleteExpense, updateExpense } from '../api/client'
-import { useExpenses } from '../hooks/useExpenses'
-import { ExpenseForm } from '../features/expenses/ExpenseForm'
-import { ExpenseList } from '../features/expenses/ExpenseList'
-import { EditExpenseModal } from '../features/expenses/EditExpenseModal'
-import { DeleteExpenseDialog } from '../features/expenses/DeleteExpenseDialog'
-import { DEFAULT_SORT, nextSort, sortExpenses, type SortState } from '../features/expenses/sortExpenses'
-import { Toast, type ToastMessage } from '../components/Toast'
+import { lazy, Suspense, useMemo, type ReactNode } from 'react'
+import { Link } from 'react-router'
+import { ArrowLeft, CalendarDays, PieChart, Plus, Receipt, Tag, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { formatDisplayDate, todayLocal } from '../../shared/dates'
+import { formatAgorotWithSeparators } from '../../shared/money'
+import { PageHeader } from '../components/PageHeader'
+import { useExpensesData } from '../features/expenses/ExpensesProvider'
+import { CategoryTag, KindBadge } from '../features/expenses/ExpenseList'
+import { isMoneyIn, signedAmount } from '../features/expenses/displayAmount'
+import { computeDashboard, TREND_MONTHS } from '../features/dashboard/dashboardData'
+import { Button, Card, CountUp, EmptyState, ErrorState, Skeleton } from '../ui'
+import { cx } from '../ui/cx'
 import styles from './HomePage.module.css'
 
-export const NOT_FOUND_MESSAGE = 'ההוצאה לא נמצאה — ייתכן שכבר נמחקה.'
+const DashboardTrend = lazy(() => import('../features/dashboard/DashboardCharts').then((m) => ({ default: m.DashboardTrend })))
+const DashboardDonut = lazy(() => import('../features/dashboard/DashboardCharts').then((m) => ({ default: m.DashboardDonut })))
 
-export function HomePage() {
-  const { state, reload: load } = useExpenses()
-  const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
-  const [editing, setEditing] = useState<Expense | null>(null)
-  const [deleting, setDeleting] = useState<Expense | null>(null)
-  const [toast, setToast] = useState<ToastMessage | null>(null)
-  const toastId = useRef(0)
+const shekels = (agorot: number) => `₪${formatAgorotWithSeparators(agorot)}`
 
-  const showToast = useCallback((text: string, kind: ToastMessage['kind'] = 'success') => {
-    toastId.current += 1
-    setToast({ id: toastId.current, text, kind })
-  }, [])
-  const clearToast = useCallback(() => setToast(null), [])
-
-  const sorted = useMemo(
-    () => (state.status === 'ready' ? sortExpenses(state.expenses, sort) : []),
-    [state, sort],
+function Kpi({ label, icon, children, footer }: { label: string; icon: ReactNode; children: ReactNode; footer?: ReactNode }) {
+  return (
+    <Card as="article" className={styles.kpi}>
+      <p className={styles.kpiLabel}>
+        <span className={styles.kpiIcon} aria-hidden="true">
+          {icon}
+        </span>
+        {label}
+      </p>
+      <p className={`num ${styles.kpiValue}`}>{children}</p>
+      {footer && <p className={styles.kpiFooter}>{footer}</p>}
+    </Card>
   )
+}
 
-  function afterChange(message: string, kind: ToastMessage['kind'] = 'success') {
-    showToast(message, kind)
-    // Reload from the server so the list reflects what was actually stored
-    void load(false)
-  }
+/** Change vs. last month: up (more spending) in Coral, down in Emerald. */
+function Change({ value }: { value: number | null }) {
+  if (value === null) return <span className={styles.muted}>אין נתונים להשוואה לחודש הקודם</span>
+  const up = value > 0
+  const Icon = up ? TrendingUp : TrendingDown
+  const text = `${Math.abs(value).toFixed(Math.abs(value) < 10 ? 1 : 0)}%`
+  return (
+    <span className={cx(styles.change, up ? styles.up : styles.down)}>
+      <Icon size={16} aria-hidden="true" />
+      <span>
+        <span className="num">{text}</span> {up ? 'יותר' : 'פחות'} מהחודש הקודם
+      </span>
+    </span>
+  )
+}
 
-  function handleNotFound() {
-    setEditing(null)
-    setDeleting(null)
-    afterChange(NOT_FOUND_MESSAGE, 'error')
-  }
+/** Home: this month at a glance, from the user's real records only. */
+export function HomePage() {
+  const { state, reload, openAdd } = useExpensesData()
+  const today = todayLocal()
+  const expenses = useMemo(() => (state.status === 'ready' ? state.expenses : []), [state])
+  const data = useMemo(() => computeDashboard(expenses, today), [expenses, today])
+
+  const addButton = (
+    <Button icon={<Plus size={18} aria-hidden="true" />} onClick={openAdd}>
+      הוספת הוצאה
+    </Button>
+  )
 
   return (
     <div className={styles.page}>
-      <section className={styles.card} aria-labelledby="add-title">
-        <h2 id="add-title" className={styles.title}>
-          <PlusCircle size={22} aria-hidden="true" className={styles.titleIcon} />
-          הוספת הוצאה
-        </h2>
-        <ExpenseForm onSubmit={createExpense} onSaved={() => afterChange('ההוצאה נשמרה')} />
-      </section>
+      <PageHeader title="שלום!" subtitle={`הנה מה שקורה ב${data.monthLabel}`} actions={addButton} />
 
-      <section className={styles.card} aria-labelledby="list-title">
-        <h2 id="list-title" className={styles.title}>
-          <ListChecks size={22} aria-hidden="true" className={styles.titleIcon} />
-          רשימת הוצאות
-        </h2>
+      {state.status === 'loading' && (
+        <div className={styles.kpis}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Card key={i} as="div" className={styles.kpi}>
+              <Skeleton lines={2} />
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {state.status === 'loading' && (
-          <p className={styles.message} role="status">
-            טוען הוצאות…
-          </p>
-        )}
+      {state.status === 'error' && <ErrorState description="לא הצלחנו לטעון את הנתונים." onRetry={() => void reload()} />}
 
-        {state.status === 'error' && (
-          <div className={styles.errorBox} role="alert">
-            <p>לא הצלחנו לטעון את ההוצאות</p>
-            <button type="button" className={styles.secondary} onClick={() => void load()}>
-              נסו שוב
-            </button>
-          </div>
-        )}
-
-        {state.status === 'ready' && state.expenses.length === 0 && (
-          <p className={styles.message}>עדיין אין הוצאות. אפשר להוסיף את הראשונה בטופס למעלה.</p>
-        )}
-
-        {state.status === 'ready' && state.expenses.length > 0 && (
-          <ExpenseList
-            expenses={sorted}
-            sort={sort}
-            onSortColumn={(key) => setSort((s) => nextSort(s, key))}
-            onSortChange={setSort}
-            onEdit={setEditing}
-            onDelete={setDeleting}
+      {state.status === 'ready' && expenses.length === 0 && (
+        <Card level={1} padding="lg">
+          <EmptyState
+            icon={<Wallet size={44} strokeWidth={1.3} />}
+            title="ברוכים הבאים!"
+            description="עדיין אין רישומים. הוסיפו את ההוצאה הראשונה, ונציג כאן את סיכום החודש, המגמה והפילוח."
+            action={
+              <Button icon={<Plus size={18} aria-hidden="true" />} onClick={openAdd}>
+                הוספת הוצאה ראשונה
+              </Button>
+            }
           />
-        )}
-      </section>
-
-      {editing && (
-        <EditExpenseModal
-          key={editing.id}
-          expense={editing}
-          onSubmit={updateExpense}
-          onSaved={() => {
-            setEditing(null)
-            afterChange('ההוצאה עודכנה')
-          }}
-          onNotFound={handleNotFound}
-          onClose={() => setEditing(null)}
-        />
+        </Card>
       )}
 
-      {deleting && (
-        <DeleteExpenseDialog
-          key={deleting.id}
-          expense={deleting}
-          onConfirm={deleteExpense}
-          onDeleted={() => {
-            setDeleting(null)
-            afterChange('ההוצאה נמחקה')
-          }}
-          onNotFound={handleNotFound}
-          onClose={() => setDeleting(null)}
-        />
-      )}
+      {state.status === 'ready' && expenses.length > 0 && (
+        <>
+          <section aria-label="סיכום החודש">
+            <div className={`${styles.kpis} stagger`}>
+              <Kpi label="הוצאות החודש (נטו)" icon={<Receipt size={18} />} footer={<Change value={data.change} />}>
+                <CountUp value={data.current.netExpenses} format={shekels} />
+              </Kpi>
+              <Kpi label="הכנסות החודש" icon={<Wallet size={18} />}>
+                <CountUp value={data.current.income} format={shekels} />
+              </Kpi>
+              <Kpi label="רישומים החודש" icon={<CalendarDays size={18} />}>
+                <CountUp value={data.current.recordCount} format={String} />
+              </Kpi>
+              <Kpi label="הקטגוריה הגדולה החודש" icon={<Tag size={18} />}>
+                <span className={styles.kpiText}>{data.topCategory ?? '—'}</span>
+              </Kpi>
+            </div>
+          </section>
 
-      <Toast message={toast} onDone={clearToast} />
+          <div className={styles.charts}>
+            <Card title={`מגמה — ${TREND_MONTHS} חודשים אחרונים`} icon={<TrendingUp size={20} aria-hidden="true" />} className={styles.trend}>
+              <Suspense fallback={<Skeleton variant="block" height={240} />}>
+                <DashboardTrend points={data.trend} />
+              </Suspense>
+              <p className={styles.legendNote}>
+                <span className={styles.barSwatch} aria-hidden="true" /> הוצאות נטו
+                {data.trend.some((p) => p.income > 0) && (
+                  <>
+                    <span className={styles.lineSwatch} aria-hidden="true" /> הכנסות
+                  </>
+                )}
+              </p>
+            </Card>
+
+            <Card title="פילוח החודש" icon={<PieChart size={20} aria-hidden="true" />}>
+              {data.categories.length > 0 ? (
+                <Suspense fallback={<Skeleton variant="block" height={240} />}>
+                  <DashboardDonut data={data.categories} />
+                </Suspense>
+              ) : (
+                <EmptyState title="אין עדיין הוצאות החודש" description="הפילוח יופיע אחרי ההוצאה הראשונה של החודש." />
+              )}
+            </Card>
+          </div>
+
+          <Card title="רישומים אחרונים" icon={<Receipt size={20} aria-hidden="true" />}>
+            <ul className={styles.recent}>
+              {data.recent.map((e) => (
+                <li key={e.id} className={styles.recentItem}>
+                  <div className={styles.recentMain}>
+                    <span className={styles.recentTitle}>{e.description ?? e.category ?? 'הכנסה'}</span>
+                    <span className={styles.recentMeta}>
+                      <span className="num">{formatDisplayDate(e.expenseDate)}</span>
+                      {e.category && <CategoryTag category={e.category} />}
+                      {e.kind !== 'expense' && <KindBadge kind={e.kind} />}
+                    </span>
+                  </div>
+                  <span className={cx('num', styles.recentAmount, isMoneyIn(e) && styles.moneyIn)}>{signedAmount(e)}</span>
+                </li>
+              ))}
+            </ul>
+            <Link to="/expenses" className={styles.allLink} viewTransition>
+              לכל ההוצאות
+              <ArrowLeft size={16} aria-hidden="true" />
+            </Link>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

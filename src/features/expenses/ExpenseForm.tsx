@@ -1,10 +1,12 @@
-import { useId, useState, type FormEvent } from 'react'
-import { CalendarDays, Check, ChevronDown, Pencil, Plus, X } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { Check, Plus } from 'lucide-react'
 import { CATEGORIES, OTHER_CATEGORY } from '../../../shared/categories'
 import { validateExpenseInput } from '../../../shared/expenseSchema'
 import { todayLocal } from '../../../shared/dates'
+import { isKind, KIND_LABELS, KINDS, kindHasCategory, type Kind } from '../../../shared/kinds'
 import type { Expense, ExpenseInput, FieldErrors } from '../../../shared/types'
 import { ApiRequestError } from '../../api/client'
+import { Button, SegmentedControl, SelectField, TextField } from '../../ui'
 import styles from './ExpenseForm.module.css'
 
 type Props = {
@@ -14,52 +16,77 @@ type Props = {
   mode?: 'create' | 'edit'
   initialValues?: ExpenseInput
   onCancel?: () => void
-  /** Called when the server says the expense no longer exists (404). */
+  /** Called when the server says the record no longer exists (404). */
   onNotFound?: () => void
 }
 
-const emptyForm = (): ExpenseInput => ({
+type FormValues = ExpenseInput & { kind: Kind }
+
+const emptyForm = (): FormValues => ({
+  kind: 'expense',
   category: '',
   description: '',
   amount: '',
   expenseDate: todayLocal(),
 })
 
-export const SAVE_FAILED_MESSAGE = 'השמירה נכשלה, ההוצאה לא נשמרה. נסו שוב.'
-export const UPDATE_FAILED_MESSAGE = 'העדכון נכשל, ההוצאה לא עודכנה. נסו שוב.'
+export const SAVE_FAILED_MESSAGE = 'השמירה נכשלה, הרישום לא נשמר. נסו שוב.'
+export const UPDATE_FAILED_MESSAGE = 'העדכון נכשל, הרישום לא עודכן. נסו שוב.'
 
-/** Converts an expense from the API to form values. */
+const KIND_OPTIONS = KINDS.map((k) => ({ value: k, label: KIND_LABELS[k] }))
+const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c }))
+
+/** Converts a record from the API to form values. */
 export function expenseToInput(e: Expense): ExpenseInput {
-  return { category: e.category, description: e.description ?? '', amount: e.amount, expenseDate: e.expenseDate }
+  return {
+    kind: e.kind,
+    category: e.category ?? '',
+    description: e.description ?? '',
+    amount: e.amount,
+    expenseDate: e.expenseDate,
+  }
 }
 
+/** Form for adding or editing a record: expense / refund / income. */
 export function ExpenseForm({ onSubmit, onSaved, mode = 'create', initialValues, onCancel, onNotFound }: Props) {
-  const id = useId()
   const isEdit = mode === 'edit'
-  const [values, setValues] = useState<ExpenseInput>(() => initialValues ?? emptyForm())
+  const [values, setValues] = useState<FormValues>(() => {
+    if (!initialValues) return emptyForm()
+    return { ...initialValues, kind: isKind(initialValues.kind) ? initialValues.kind : 'expense' }
+  })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const today = todayLocal()
-  const isOther = values.category === OTHER_CATEGORY
+  const hasCategory = kindHasCategory(values.kind)
+  const isOther = hasCategory && values.category === OTHER_CATEGORY
 
-  function update(field: keyof ExpenseInput, value: string) {
+  function update(field: keyof FormValues, value: string) {
     setValues((v) => ({ ...v, [field]: value }))
     // Clear the field's error once the user edits it
     setErrors((e) => {
       const next = { ...e }
       delete next[field]
-      if (field === 'category') delete next.description
+      if (field === 'category' || field === 'kind') {
+        delete next.description
+        delete next.category
+      }
       return next
     })
+  }
+
+  /** What is sent: income never carries a category. */
+  function toInput(v: FormValues): ExpenseInput {
+    return { ...v, category: kindHasCategory(v.kind) ? v.category : '' }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setSaveError(null)
 
-    const result = validateExpenseInput(values, today)
+    const input = toInput(values)
+    const result = validateExpenseInput(input, today)
     if (!result.ok) {
       setErrors(result.errors)
       return
@@ -67,8 +94,8 @@ export function ExpenseForm({ onSubmit, onSaved, mode = 'create', initialValues,
 
     setSaving(true)
     try {
-      const saved = await onSubmit(values)
-      if (!isEdit) setValues(emptyForm())
+      const saved = await onSubmit(input)
+      if (!isEdit) setValues({ ...emptyForm(), kind: values.kind })
       setErrors({})
       onSaved(saved)
     } catch (err) {
@@ -84,105 +111,59 @@ export function ExpenseForm({ onSubmit, onSaved, mode = 'create', initialValues,
     }
   }
 
-  const fieldId = (name: string) => `${id}-${name}`
-  const errorId = (name: keyof ExpenseInput) => (errors[name] ? `${fieldId(name)}-error` : undefined)
-
-  function FieldError({ name }: { name: keyof ExpenseInput }) {
-    if (!errors[name]) return null
-    return (
-      <p id={`${fieldId(name)}-error`} className={styles.fieldError} role="alert">
-        {errors[name]}
-      </p>
-    )
-  }
+  const label = KIND_LABELS[values.kind]
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <SegmentedControl label="סוג" options={KIND_OPTIONS} value={values.kind} onChange={(k) => update('kind', k)} />
+
       <div className={styles.grid}>
-        <div className={styles.field}>
-          <label htmlFor={fieldId('category')}>קטגוריה</label>
-          <div className={styles.control}>
-            <select
-              id={fieldId('category')}
-              value={values.category}
-              onChange={(e) => update('category', e.target.value)}
-              aria-invalid={!!errors.category}
-              aria-describedby={errorId('category')}
-              className={`${styles.input} ${styles.select} ${values.category === '' ? styles.placeholder : ''}`}
-            >
-              <option value="">בחר קטגוריה</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className={styles.iconEnd} size={18} aria-hidden="true" />
-          </div>
-          <FieldError name="category" />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor={fieldId('description')}>תיאור</label>
-          <div className={styles.control}>
-            <input
-              id={fieldId('description')}
-              type="text"
-              value={values.description}
-              onChange={(e) => update('description', e.target.value)}
-              placeholder={isOther ? 'תיאור ההוצאה (חובה)' : 'תיאור ההוצאה (אופציונלי)'}
-              aria-invalid={!!errors.description}
-              aria-describedby={errorId('description')}
-              aria-required={isOther}
-              maxLength={200}
-              className={`${styles.input} ${styles.withIcon}`}
-            />
-            <Pencil className={styles.iconStart} size={16} aria-hidden="true" />
-          </div>
-          <FieldError name="description" />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor={fieldId('amount')}>סכום (₪)</label>
-          <div className={styles.control}>
-            <input
-              id={fieldId('amount')}
-              type="text"
-              inputMode="decimal"
-              dir="ltr"
-              value={values.amount}
-              onChange={(e) => update('amount', e.target.value)}
-              placeholder="0.00"
-              aria-invalid={!!errors.amount}
-              aria-describedby={errorId('amount')}
-              className={`${styles.input} ${styles.numeric} ${styles.withIcon}`}
-            />
-            <span className={styles.iconStart} aria-hidden="true">
-              ₪
-            </span>
-          </div>
-          <FieldError name="amount" />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor={fieldId('expenseDate')}>תאריך</label>
-          <div className={styles.control}>
-            <input
-              id={fieldId('expenseDate')}
-              type="date"
-              value={values.expenseDate}
-              max={today}
-              onChange={(e) => update('expenseDate', e.target.value)}
-              aria-invalid={!!errors.expenseDate}
-              aria-describedby={errorId('expenseDate')}
-              className={`${styles.input} ${styles.numeric} ${styles.date}`}
-            />
-            <CalendarDays className={styles.iconStart} size={16} aria-hidden="true" />
-          </div>
-          <FieldError name="expenseDate" />
-        </div>
+        <TextField
+          label="סכום (₪)"
+          numeric
+          className={styles.amount}
+          startAdornment="₪"
+          placeholder="0.00"
+          value={values.amount}
+          onChange={(e) => update('amount', e.target.value)}
+          error={errors.amount}
+        />
+        <TextField
+          label="תאריך"
+          type="date"
+          numeric
+          max={today}
+          value={values.expenseDate}
+          onChange={(e) => update('expenseDate', e.target.value)}
+          error={errors.expenseDate}
+        />
+        {hasCategory && (
+          <SelectField
+            label="קטגוריה"
+            placeholder="בחרו קטגוריה"
+            options={CATEGORY_OPTIONS}
+            value={values.category}
+            onChange={(e) => update('category', e.target.value)}
+            error={errors.category}
+          />
+        )}
+        <TextField
+          label="תיאור"
+          className={hasCategory ? undefined : styles.wide}
+          placeholder={isOther ? `תיאור ה${label} (חובה)` : `תיאור ה${label} (אופציונלי)`}
+          aria-required={isOther}
+          maxLength={200}
+          value={values.description}
+          onChange={(e) => update('description', e.target.value)}
+          error={errors.description}
+        />
       </div>
 
+      {errors.kind && (
+        <p className={styles.saveError} role="alert">
+          {errors.kind}
+        </p>
+      )}
       {saveError && (
         <p className={styles.saveError} role="alert">
           {saveError}
@@ -190,15 +171,17 @@ export function ExpenseForm({ onSubmit, onSaved, mode = 'create', initialValues,
       )}
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.primary} disabled={saving}>
-          {saving ? 'שומר…' : isEdit ? 'שמירה' : 'הוסף הוצאה'}
-          {!saving && (isEdit ? <Check size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />)}
-        </button>
+        <Button
+          type="submit"
+          loading={saving}
+          icon={isEdit ? <Check size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />}
+        >
+          {saving ? 'שומר…' : isEdit ? 'שמירה' : `הוספת ${label}`}
+        </Button>
         {isEdit && onCancel && (
-          <button type="button" className={styles.secondary} onClick={onCancel} disabled={saving}>
+          <Button variant="secondary" onClick={onCancel} disabled={saving}>
             ביטול
-            <X size={18} aria-hidden="true" />
-          </button>
+          </Button>
         )}
       </div>
     </form>

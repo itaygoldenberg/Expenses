@@ -1,0 +1,88 @@
+/*
+ * Design tokens — "Liquid Glass" (spec/DESIGN.md 3.0, section 2).
+ * Breakpoints (used in media queries): 768px (tablet), 1200px (desktop).
+ */
+:root {
+  /* Colors */
+  --bg-0: #070b14; /* Midnight */
+  --bg-1: #0b1426; /* Deep Navy */
+  --graphite-900: #141b2b; /* opaque surface (fallback) */
+  --graphite-400: #8a94a6;
+  --text: #f2f5fa; /* Frosted White */
+  --text-2: #9aa4b5; /* secondary text (a touch lighter than graphite-400 for contrast on glass) */
+  --accent: #6ea8ff; /* Soft Blue */
+  --accent-2: #5fd4e8; /* Subtle Cyan */
+  --positive: #3ccb8e; /* Restrained Emerald */
+  --negative: #ff6b7a; /* Soft Coral */
+  --warning: #f2b45c; /* Soft Amber */
+  --on-accent: #070b14; /* text on accent-filled buttons */
+
+  /* Glass */
+  --glass-fill: rgb(255 255 255 / 0.07);
+  --glass-fill-strong: rgb(255 255 255 / 0.11);
+  --glass-fill-dark: rgb(8 12 22 / 0.72);
+  --glass-inset: rgb(0 0 0 / 0.25);
+  --glass-border: rgb(255 255 255 / 0.14);
+  --glass-border-strong: rgb(255 255 255 / 0.26);
+  --glass-highlight: linear-gradient(180deg, rgb(255 255 255 / 0.18), transparent 40%);
+  --glass-blur-1: 18px;
+  --glass-blur-2: 24px;
+  --glass-blur-3: 12px;
+  --glass-saturate: 140%;
+
+  /* Depth & focus */
+  --shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 24px 60px rgb(0 0 0 / 0.45);
+  --focus-ring: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--accent);
+
+  /* Typography */
+  --font: 'Heebo', 'Inter', system-ui, sans-serif;
+  --font-num: 'Inter', 'Heebo', system-ui, sans-serif;
+  --fs-display: 40px;
+  --fs-h1: 32px;
+  --fs-h2: 24px;
+  --fs-h3: 18px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-caption: 13px;
+  --lh-text: 1.5;
+  --lh-title: 1.2;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Radii */
+  --r-field: 12px;
+  --r-button: 14px;
+  --r-sm: 16px;
+  --r-card: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Motion */
+  --dur-press: 120ms;
+  --dur-ui: 200ms;
+  --dur-enter: 320ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Chart / category colors (fixed order, DESIGN 2.1) */
+  --chart-1: #6ea8ff;
+  --chart-2: #5fd4e8;
+  --chart-3: #3ccb8e;
+  --chart-4: #b49bff;
+  --chart-5: #f2b45c;
+  --chart-6: #ff8fa3;
+  --chart-7: #7fb8c9;
+  --chart-8: #9db6ff;
+  --chart-9: #c9a86b;
+  --chart-10: #8fd3b6;
+  --chart-11: #a7afbf;
+
+  color-scheme: dark;
+}

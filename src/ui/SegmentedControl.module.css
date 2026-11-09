@@ -1,0 +1,61 @@
+.group {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  background: var(--glass-inset);
+  isolation: isolate;
+}
+
+.indicator {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  inset-inline-start: 4px;
+  width: calc((100% - 8px) / var(--count));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--r-pill);
+  background: var(--glass-fill-strong);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.25);
+  /* RTL: the next option is to the left (negative x) */
+  transform: translateX(calc(var(--index) * -100%));
+  transition: transform var(--dur-ui) var(--ease);
+}
+
+:global([dir='ltr']) .indicator {
+  transform: translateX(calc(var(--index) * 100%));
+}
+
+.option {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-ui) var(--ease);
+}
+
+.option:hover,
+.checked {
+  color: var(--text);
+}
+
+.sm .option {
+  min-height: 36px;
+  padding: 0 var(--space-1);
+  font-size: var(--fs-small);
+}
+
+/* Narrow phones: slightly smaller text so five short options fit in one row */
+@media (max-width: 420px) {
+  .sm .option {
+    font-size: var(--fs-caption);
+  }
+}

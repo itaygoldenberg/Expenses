@@ -43,9 +43,10 @@ export async function PUT(request: Request): Promise<Response> {
       set category = ${v.category},
           description = ${v.description},
           amount_agorot = ${v.amountAgorot},
-          expense_date = ${v.expenseDate}
+          expense_date = ${v.expenseDate},
+          kind = ${v.kind}
       where id = ${id}
-      returning id, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
+      returning id, kind, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
     `
     if (rows.length === 0) return notFound()
     return json(rowToExpense(rows[0]))

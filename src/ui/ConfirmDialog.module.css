@@ -1,0 +1,14 @@
+.body {
+  color: var(--text-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.actions > * {
+  flex: 1 1 140px;
+}

@@ -12,6 +12,7 @@ afterEach(cleanup)
 
 const saved: Expense = {
   id: '1',
+  kind: 'expense',
   category: 'מזון',
   description: null,
   amount: '12.50',
@@ -34,7 +35,7 @@ describe('ExpenseForm', () => {
 
   it('shows required-field errors and does not call the API', async () => {
     const { onSubmit, user } = setup()
-    await user.click(screen.getByRole('button', { name: /הוסף הוצאה/ }))
+    await user.click(screen.getByRole('button', { name: /הוספת הוצאה/ }))
     expect(screen.getByText('יש לבחור קטגוריה')).toBeInTheDocument()
     expect(screen.getByText('יש להזין סכום')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
@@ -44,7 +45,7 @@ describe('ExpenseForm', () => {
     const { onSubmit, user } = setup()
     await user.selectOptions(screen.getByLabelText('קטגוריה'), 'אחר')
     await user.type(screen.getByLabelText('סכום (₪)'), '1.234')
-    await user.click(screen.getByRole('button', { name: /הוסף הוצאה/ }))
+    await user.click(screen.getByRole('button', { name: /הוספת הוצאה/ }))
     expect(screen.getByText("בקטגוריה 'אחר' יש להזין תיאור")).toBeInTheDocument()
     expect(screen.getByText('עד שתי ספרות אחרי הנקודה')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
@@ -54,8 +55,9 @@ describe('ExpenseForm', () => {
     const { onSubmit, onSaved, user } = setup()
     await user.selectOptions(screen.getByLabelText('קטגוריה'), 'מזון')
     await user.type(screen.getByLabelText('סכום (₪)'), '12.5')
-    await user.click(screen.getByRole('button', { name: /הוסף הוצאה/ }))
+    await user.click(screen.getByRole('button', { name: /הוספת הוצאה/ }))
     expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'expense',
       category: 'מזון',
       description: '',
       amount: '12.5',
@@ -69,7 +71,7 @@ describe('ExpenseForm', () => {
     const { onSaved, user } = setup(vi.fn().mockRejectedValue(new ApiRequestError('network', 0)))
     await user.selectOptions(screen.getByLabelText('קטגוריה'), 'דלק')
     await user.type(screen.getByLabelText('סכום (₪)'), '180')
-    await user.click(screen.getByRole('button', { name: /הוסף הוצאה/ }))
+    await user.click(screen.getByRole('button', { name: /הוספת הוצאה/ }))
     expect(screen.getByText(SAVE_FAILED_MESSAGE)).toBeInTheDocument()
     expect((screen.getByLabelText('סכום (₪)') as HTMLInputElement).value).toBe('180')
     expect(onSaved).not.toHaveBeenCalled()
@@ -81,7 +83,27 @@ describe('ExpenseForm', () => {
     )
     await user.selectOptions(screen.getByLabelText('קטגוריה'), 'דלק')
     await user.type(screen.getByLabelText('סכום (₪)'), '180')
-    await user.click(screen.getByRole('button', { name: /הוסף הוצאה/ }))
+    await user.click(screen.getByRole('button', { name: /הוספת הוצאה/ }))
     expect(screen.getByText('לא ניתן לבחור תאריך עתידי')).toBeInTheDocument()
+  })
+
+  it('hides the category for income and sends none', async () => {
+    const { onSubmit, user } = setup()
+    expect(screen.getByRole('radio', { name: 'הוצאה' })).toHaveAttribute('aria-checked', 'true')
+    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'מזון')
+    await user.click(screen.getByRole('radio', { name: 'הכנסה' }))
+    expect(screen.queryByLabelText('קטגוריה')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('סכום (₪)'), '5000')
+    await user.click(screen.getByRole('button', { name: /הוספת הכנסה/ }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ kind: 'income', category: '', amount: '5000' }))
+  })
+
+  it('a refund still needs a category', async () => {
+    const { onSubmit, user } = setup()
+    await user.click(screen.getByRole('radio', { name: 'זיכוי' }))
+    await user.type(screen.getByLabelText('סכום (₪)'), '20')
+    await user.click(screen.getByRole('button', { name: /הוספת זיכוי/ }))
+    expect(screen.getByText('יש לבחור קטגוריה')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

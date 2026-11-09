@@ -79,7 +79,7 @@ describe('POST /api/expenses', () => {
     db.rows = [{ id: 'n', category: 'מזון', description: 'סופרמרקט', amount_agorot: 24990, expense_date: '2026-01-15' }]
     const res = await post(validBody)
     expect(res.status).toBe(201)
-    expect(db.lastValues).toEqual(['מזון', 'סופרמרקט', 24990, '2026-01-15'])
+    expect(db.lastValues).toEqual(['מזון', 'סופרמרקט', 24990, '2026-01-15', 'expense'])
     expect(await res.json()).toMatchObject({ id: 'n', amount: '249.90' })
   })
 
@@ -120,5 +120,31 @@ describe('POST /api/expenses', () => {
     expect((await post(validBody)).status).toBe(400)
     db.error = Object.assign(new Error('connect failed'), { code: 'CONNECT_TIMEOUT' })
     expect((await post(validBody)).status).toBe(503)
+  })
+})
+
+describe('POST /api/expenses — record kinds', () => {
+  it('stores income without a category and returns its kind', async () => {
+    db.rows = [{ id: 'i', kind: 'income', category: null, description: 'משכורת', amount_agorot: 1200000, expense_date: '2026-01-15' }]
+    const res = await POST(
+      new Request('http://localhost/api/expenses', {
+        method: 'POST',
+        body: JSON.stringify({ kind: 'income', category: 'מזון', description: 'משכורת', amount: '12000', expenseDate: '2026-01-15' }),
+      }),
+    )
+    expect(res.status).toBe(201)
+    expect(db.lastValues).toEqual([null, 'משכורת', 1200000, '2026-01-15', 'income'])
+    expect(await res.json()).toMatchObject({ kind: 'income', category: null, amount: '12000.00' })
+  })
+
+  it('rejects an unknown kind with a field error', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/expenses', {
+        method: 'POST',
+        body: JSON.stringify({ kind: 'gift', category: 'מזון', amount: '1', expenseDate: '2026-01-15' }),
+      }),
+    )
+    expect(res.status).toBe(400)
+    expect((await res.json()).error.fields).toHaveProperty('kind')
   })
 })

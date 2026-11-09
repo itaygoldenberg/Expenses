@@ -1,0 +1,74 @@
+.pill {
+  --tone: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.neutral {
+  --tone: var(--text-2);
+}
+.positive {
+  --tone: var(--positive);
+}
+.negative {
+  --tone: var(--negative);
+}
+.warning {
+  --tone: var(--warning);
+}
+.accent {
+  --tone: var(--accent);
+}
+
+.neutral.chip {
+  color: var(--text);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chip {
+  min-height: 32px;
+  font-size: var(--fs-small);
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Visual size stays small; the hit area is enlarged by the pseudo-element */
+  position: relative;
+  width: 20px;
+  height: 20px;
+  margin-inline-end: -6px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+
+.remove::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+
+.remove:hover {
+  background: rgb(255 255 255 / 0.18);
+}

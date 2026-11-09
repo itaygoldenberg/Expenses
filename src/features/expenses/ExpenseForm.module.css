@@ -1,204 +1,52 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-6);
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px 24px;
+  gap: var(--space-4);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.control {
-  position: relative;
-}
-
-.input {
-  width: 100%;
-  height: 48px;
-  padding: 0 14px;
-  background: var(--deep-navy);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  font-size: 16px; /* prevents zoom on mobile */
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.8;
-}
-
-.input:hover {
-  border-color: var(--border-strong);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--cyan);
-  box-shadow: var(--glow-cyan);
-}
-
-.input[aria-invalid='true'] {
-  border-color: var(--error);
-}
-
-.input[aria-invalid='true']:focus {
-  box-shadow: var(--glow-pink);
-}
-
-.select {
-  appearance: none;
-  padding-inline-end: 40px;
-  cursor: pointer;
-}
-
-.select option {
-  background: var(--panel-blue);
-  color: var(--text-light);
-}
-
-.placeholder {
-  color: var(--text-muted);
-}
-
-.withIcon {
-  padding-inline-end: 40px;
-}
-
-/* In RTL the visual "start" icon sits on the left edge */
-.iconStart,
-.iconEnd {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--cyan);
-  pointer-events: none;
+/* Large amount field */
+.amount input {
+  height: 54px;
+  font-size: 22px;
   font-weight: 600;
 }
 
-.iconStart {
-  inset-inline-end: 14px;
+.amount > div {
+  min-height: 56px;
 }
 
-.iconEnd {
-  inset-inline-start: auto;
-  inset-inline-end: 14px;
-}
-
-/* Amount and date are LTR; keep their icon on the left (the end in RTL layout) */
-.numeric {
-  text-align: right;
-  font-family: var(--font-numeric);
-  font-variant-numeric: tabular-nums;
-}
-
-.date {
-  padding-inline-end: 40px;
-  color-scheme: dark;
-}
-
-.date::-webkit-calendar-picker-indicator {
-  opacity: 0;
-  position: absolute;
-  inset-inline-end: 8px;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-}
-
-.fieldError {
-  font-size: 14px;
-  color: var(--error);
+.wide {
+  grid-column: 1 / -1;
 }
 
 .saveError {
-  padding: 12px 16px;
-  border-radius: var(--radius-lg);
-  background: rgb(255 59 120 / 0.12);
-  border: 1px solid rgb(255 59 120 / 0.5);
-  color: var(--text-light);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgb(255 107 122 / 0.45);
+  border-radius: var(--r-field);
+  background: rgb(255 107 122 / 0.08);
+  color: var(--negative);
+  font-size: var(--fs-small);
+  font-weight: 500;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-start; /* right side in RTL, as in the wireframe */
+  gap: var(--space-3);
 }
 
-.secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  width: 100%;
-  padding: 0 28px;
-  border-radius: var(--radius-lg);
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-light);
-  font-weight: 600;
-  cursor: pointer;
+.actions > * {
+  flex: 1 1 160px;
 }
 
-.secondary:hover {
-  border-color: var(--cyan);
-  box-shadow: var(--glow-cyan);
-}
-
-.primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  width: 100%;
-  padding: 0 28px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--gradient-primary);
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--glow-pink);
-  transition: filter 0.15s, transform 0.05s;
-}
-
-.primary:hover {
-  filter: brightness(1.08);
-}
-
-.primary:active {
-  transform: translateY(1px);
-}
-
-.primary:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-@media (min-width: 768px) {
+@media (min-width: 600px) {
   .grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .primary,
-  .secondary {
-    width: auto;
   }
 }

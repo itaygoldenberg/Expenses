@@ -1,0 +1,53 @@
+.region {
+  position: fixed;
+  inset-inline: 0;
+  /* Above the phone tab bar */
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 420px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  animation: var(--kf-fade-up) var(--dur-enter) var(--ease) both;
+}
+
+.toast svg {
+  flex-shrink: 0;
+}
+
+.success svg {
+  color: var(--positive);
+}
+
+.error {
+  border-color: rgb(255 107 122 / 0.5);
+}
+
+.error svg {
+  color: var(--negative);
+}
+
+.info svg {
+  color: var(--accent);
+}
+
+/* Tablet / desktop: bottom corner (left side in RTL, away from the sidebar) */
+@media (min-width: 768px) {
+  .region {
+    inset-inline-start: auto;
+    inset-inline-end: var(--space-6);
+    bottom: var(--space-6);
+    justify-content: flex-end;
+    padding: 0;
+  }
+}

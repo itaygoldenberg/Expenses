@@ -1,0 +1,99 @@
+/*
+ * Glass surfaces (DESIGN 2.3). Three levels; never stack more than two.
+ * Opaque fallback when backdrop-filter is unsupported or transparency is reduced.
+ */
+:where(.glass-1, .glass-2, .glass-3) {
+  position: relative;
+}
+
+.glass-1,
+.glass-2,
+.glass-3 {
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow);
+  isolation: isolate;
+}
+
+.glass-1 {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur-1)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-1)) saturate(var(--glass-saturate));
+}
+
+.glass-2 {
+  background: rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(var(--glass-blur-2)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-2)) saturate(var(--glass-saturate));
+}
+
+.glass-3 {
+  background: var(--glass-fill-dark);
+  backdrop-filter: blur(var(--glass-blur-3)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(var(--glass-saturate));
+}
+
+/* Soft inner highlight along the top edge */
+.glass-1::before,
+.glass-2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-highlight);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Fallback: no backdrop-filter support → opaque surfaces */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-1,
+  .glass-2 {
+    background: var(--graphite-900);
+  }
+  .glass-3 {
+    background: var(--bg-0);
+  }
+}
+
+/* Reduced transparency (system setting or the test switch on <html>) */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-1,
+  .glass-2,
+  .glass-3 {
+    background: var(--graphite-900);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .glass-1::before,
+  .glass-2::before {
+    display: none;
+  }
+}
+
+:root[data-reduce-transparency='true'] .glass-1,
+:root[data-reduce-transparency='true'] .glass-2,
+:root[data-reduce-transparency='true'] .glass-3 {
+  background: var(--graphite-900);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root[data-reduce-transparency='true'] .glass-1::before,
+:root[data-reduce-transparency='true'] .glass-2::before {
+  display: none;
+}
+
+/* Test switch: simulate a browser without backdrop-filter */
+:root[data-simulate-no-blur='true'] .glass-1,
+:root[data-simulate-no-blur='true'] .glass-2 {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--graphite-900);
+}
+
+:root[data-simulate-no-blur='true'] .glass-3 {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg-0);
+}

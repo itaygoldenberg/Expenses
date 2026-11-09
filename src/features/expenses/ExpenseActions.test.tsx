@@ -15,6 +15,7 @@ afterEach(cleanup)
 
 const expense: Expense = {
   id: '05af603f-25ed-424c-9010-1f9d27293e44',
+  kind: 'expense',
   category: 'דלק',
   description: 'תדלוק',
   amount: '180.00',

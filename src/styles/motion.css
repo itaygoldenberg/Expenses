@@ -1,0 +1,133 @@
+/*
+ * Motion (DESIGN 2.5): transform/opacity only; everything respects reduced motion
+ * (system setting or the data-reduce-motion test switch on <html>).
+ */
+
+/* Keyframe names for CSS modules (modules would otherwise rename them locally) */
+:root {
+  --kf-fade-up: fade-up;
+  --kf-fade-in: fade-in;
+  --kf-pop-in: pop-in;
+  --kf-sheet-up: sheet-up;
+  --kf-shimmer: shimmer;
+  --kf-drift-a: drift-a;
+  --kf-drift-b: drift-b;
+  --kf-spin: spin;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes drift-a {
+  50% {
+    transform: translate3d(-8vw, 6vh, 0) scale(1.08);
+  }
+}
+
+@keyframes drift-b {
+  50% {
+    transform: translate3d(7vw, -5vh, 0) scale(0.94);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Staggered entrance for children of .stagger */
+.enter {
+  animation: fade-up var(--dur-enter) var(--ease) both;
+}
+
+.stagger > * {
+  animation: fade-up var(--dur-enter) var(--ease) both;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+
+/* Page transitions (View Transitions API, used by React Router's viewTransition) */
+::view-transition-old(root) {
+  animation: 160ms var(--ease) both reverse fade-in;
+}
+::view-transition-new(root) {
+  animation: var(--dur-enter) var(--ease) both fade-up;
+}
+
+/* Reduced motion: system setting */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* Reduced motion: test switch */
+:root[data-reduce-motion='true'] *,
+:root[data-reduce-motion='true'] *::before,
+:root[data-reduce-motion='true'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+}
+
+:root[data-reduce-motion='true']::view-transition-old(root),
+:root[data-reduce-motion='true']::view-transition-new(root) {
+  animation: none !important;
+}

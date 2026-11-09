@@ -1,27 +1,11 @@
-import { CATEGORIES, type Category } from '../../../shared/categories'
-import { formatAgorotWithSeparators, parseShekelsToAgorot } from '../../../shared/money'
+import { formatAgorotWithSeparators } from '../../../shared/money'
+import { metricValue as valueOf, type Metric } from '../metrics/metrics'
 import type { Expense } from '../../../shared/types'
 
-/** 'amount' = total in agorot (whole numbers), 'count' = number of expenses. */
-export type Metric = 'amount' | 'count'
+export type { Metric } from '../metrics/metrics'
+export { byCategory } from '../metrics/metrics'
 
 export const SHORT_MONTHS = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'] as const
-
-function valueOf(e: Expense, metric: Metric): number {
-  if (metric === 'count') return 1
-  const parsed = parseShekelsToAgorot(e.amount)
-  return parsed.ok ? parsed.agorot : 0
-}
-
-/** Totals per category, only categories that have expenses, largest first. */
-export function byCategory(expenses: readonly Expense[], metric: Metric): { category: Category; value: number }[] {
-  const totals = new Map<Category, number>()
-  for (const e of expenses) totals.set(e.category, (totals.get(e.category) ?? 0) + valueOf(e, metric))
-  const order = (c: Category) => CATEGORIES.indexOf(c)
-  return [...totals.entries()]
-    .map(([category, value]) => ({ category, value }))
-    .sort((a, b) => b.value - a.value || order(a.category) - order(b.category))
-}
 
 /** Years that have expenses, newest first. */
 export function yearsWithExpenses(expenses: readonly Expense[]): string[] {
@@ -54,9 +38,10 @@ export function byMonth(expenses: readonly Expense[], year: string, metric: Metr
   return totals.map((value, i) => ({ label: SHORT_MONTHS[i], value }))
 }
 
-/** Display text for a value: "₪ 1,249.90" for amounts, "3" for counts. */
+/** Display text for a value: "₪ 1,249.90" for amounts ("−₪ 20.00" when negative), "3" for counts. */
 export function formatValue(value: number, metric: Metric): string {
-  return metric === 'amount' ? `₪ ${formatAgorotWithSeparators(value)}` : String(value)
+  if (metric !== 'amount') return String(value)
+  return value < 0 ? `−₪ ${formatAgorotWithSeparators(-value)}` : `₪ ${formatAgorotWithSeparators(value)}`
 }
 
 /** Chart.js works in numbers: shekels for amounts (2 decimals, display only), counts as is. */

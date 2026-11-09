@@ -1,4 +1,6 @@
 import { parseShekelsToAgorot } from '../../../shared/money'
+import type { Category } from '../../../shared/categories'
+import type { Kind } from '../../../shared/kinds'
 import type { Expense } from '../../../shared/types'
 
 /** Filter values as chosen in the form. Empty string = no condition. */
@@ -41,7 +43,7 @@ export function availableYears(expenses: readonly Expense[]): string[] {
  * no year → no month/day; no month → no day; a day that does not exist in the
  * chosen month (e.g. 31 in a 30-day month, 29 Feb in a common year) is cleared.
  */
-export function normalizeFilters(f: Filters): Filters {
+export function normalizeFilters<F extends Filters>(f: F): F {
   if (!f.year) return { ...f, month: '', day: '' }
   if (!f.month) return { ...f, day: '' }
   if (f.day && Number(f.day) > daysInMonth(Number(f.year), Number(f.month))) return { ...f, day: '' }
@@ -78,4 +80,34 @@ export function filterExpenses(expenses: readonly Expense[], filters: Filters): 
     }
     return true
   })
+}
+
+/** Expenses page: the date / amount filters plus search, type and category. */
+export type RecordFilters = Filters & {
+  search: string
+  kind: '' | Kind
+  category: '' | Category
+}
+
+export const EMPTY_RECORD_FILTERS: RecordFilters = { ...EMPTY_FILTERS, search: '', kind: '', category: '' }
+
+/** Lower-case, single spaces, trimmed — so "  Super   PHARM " finds "super pharm". */
+export function normalizeSearch(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').toLocaleLowerCase('he')
+}
+
+/** Records that match ALL the conditions (AND), including the free-text search in the description. */
+export function filterRecords(expenses: readonly Expense[], filters: RecordFilters): Expense[] {
+  const query = normalizeSearch(filters.search)
+  return filterExpenses(expenses, filters).filter((e) => {
+    if (filters.kind && e.kind !== filters.kind) return false
+    if (filters.category && e.category !== filters.category) return false
+    if (query && !normalizeSearch(e.description ?? '').includes(query)) return false
+    return true
+  })
+}
+
+/** Number of active conditions besides the search (for the "סינון" button badge). */
+export function activeFilterCount(f: RecordFilters): number {
+  return [f.year, f.month, f.day, f.maxAmount.trim(), f.kind, f.category].filter(Boolean).length
 }

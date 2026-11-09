@@ -84,7 +84,7 @@ describe('validateExpenseInput', () => {
   it('normalizes a valid expense', () => {
     expect(validateExpenseInput({ ...valid, description: '  סופרמרקט ' }, today)).toEqual({
       ok: true,
-      value: { category: 'מזון', description: 'סופרמרקט', amountAgorot: 24990, expenseDate: today },
+      value: { kind: 'expense', category: 'מזון', description: 'סופרמרקט', amountAgorot: 24990, expenseDate: today },
     })
     const empty = validateExpenseInput(valid, today)
     expect(empty.ok && empty.value.description).toBeNull()
@@ -127,5 +127,39 @@ describe('validateExpenseInput', () => {
   it('rejects bodies with wrong types', () => {
     expect(validateExpenseInput({ ...valid, category: 5 }, today).ok).toBe(false)
     expect(validateExpenseInput('not an object', today).ok).toBe(false)
+  })
+})
+
+describe('record kinds', () => {
+  const today = '2026-11-10'
+  const base = { category: 'מזון', description: '', amount: '100', expenseDate: '2026-11-01' }
+
+  it('defaults a missing kind to expense', () => {
+    const r = validateExpenseInput(base, today)
+    expect(r.ok && r.value.kind).toBe('expense')
+  })
+
+  it('accepts refund with a category', () => {
+    const r = validateExpenseInput({ ...base, kind: 'refund' }, today)
+    expect(r).toMatchObject({ ok: true, value: { kind: 'refund', category: 'מזון' } })
+  })
+
+  it('stores income without a category, even if one was sent', () => {
+    const r = validateExpenseInput({ ...base, kind: 'income', category: 'מזון' }, today)
+    expect(r).toMatchObject({ ok: true, value: { kind: 'income', category: null } })
+    const none = validateExpenseInput({ ...base, kind: 'income', category: '' }, today)
+    expect(none).toMatchObject({ ok: true, value: { kind: 'income', category: null } })
+  })
+
+  it('requires a category for expense and refund', () => {
+    for (const kind of ['expense', 'refund']) {
+      const r = validateExpenseInput({ ...base, kind, category: '' }, today)
+      expect(r).toMatchObject({ ok: false, errors: { category: MESSAGES.categoryRequired } })
+    }
+  })
+
+  it('rejects an unknown kind', () => {
+    const r = validateExpenseInput({ ...base, kind: 'gift' }, today)
+    expect(r).toMatchObject({ ok: false, errors: { kind: MESSAGES.kindInvalid } })
   })
 })

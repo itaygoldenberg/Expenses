@@ -1,74 +1,189 @@
-.box {
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgb(34 225 255 / 0.06), rgb(139 124 255 / 0.08));
-  border: 1px solid var(--border-strong);
+.page {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-6);
 }
 
-.boxTitle {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 4px;
+.hero {
+  overflow: hidden;
 }
 
-.developer {
+.heroInner {
   display: flex;
-  flex-direction: column-reverse; /* phone: photo above the text */
-  gap: 16px;
-}
-
-.details {
-  flex: 1;
-}
-
-.placeholder {
-  color: var(--text-muted);
-}
-
-.photoBox {
-  margin: 0;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-6);
   text-align: center;
 }
 
-.photo,
-.photoPlaceholder {
-  width: 140px;
-  height: 140px;
+/* Round photo with a soft ring of light */
+.photoWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 176px;
+  height: 176px;
+  padding: 4px;
   border-radius: 50%;
-  border: 2px solid var(--cyan);
-  box-shadow: var(--glow-cyan);
+  background: linear-gradient(140deg, var(--accent), var(--accent-2) 55%, transparent 90%);
+  box-shadow: 0 0 40px rgb(110 168 255 / 0.35);
 }
 
 .photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--bg-0);
+  border-radius: 50%;
   object-fit: cover;
 }
 
-.photoPlaceholder {
+.heroText {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.kicker {
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.name {
+  font-size: var(--fs-h1);
+}
+
+.latin {
+  color: var(--text-2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.description {
+  max-width: 60ch;
+  color: var(--text-2);
+  font-size: 17px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-h2);
+}
+
+.section > .sectionTitle {
+  margin-bottom: 0;
+}
+
+.paragraph {
+  max-width: 70ch;
+  color: var(--text-2);
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.features > li {
+  display: flex;
+}
+
+.feature {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.featureIcon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
-  background: var(--deep-navy);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-field);
+  background: rgb(110 168 255 / 0.12);
+  color: var(--accent);
 }
 
-.caption {
-  color: var(--text-muted);
-  font-size: 14px;
+.featureTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-h3);
 }
 
-@media (min-width: 768px) {
-  /* Desktop: text and photo side by side (photo on the left in RTL, as in the mockup) */
-  .developer {
+.featureText {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-6) 0 var(--space-4);
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  text-align: center;
+}
+
+.footer p:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Desktop: photo and text side by side */
+@media (min-width: 900px) {
+  .heroInner {
     flex-direction: row;
+    align-items: center;
+    gap: var(--space-8);
+    text-align: start;
   }
-
-  .photoBox {
-    width: 240px;
-    flex-shrink: 0;
+  .links {
+    justify-content: flex-start;
   }
 }

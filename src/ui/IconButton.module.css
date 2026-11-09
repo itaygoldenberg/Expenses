@@ -1,0 +1,43 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform var(--dur-press) var(--ease),
+    background-color var(--dur-ui) var(--ease);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.glass {
+  background: var(--glass-fill);
+  border-color: var(--glass-border);
+}
+
+.glass:hover:not(:disabled) {
+  background: var(--glass-fill-strong);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-2);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--glass-fill);
+  color: var(--text);
+}

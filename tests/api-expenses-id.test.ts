@@ -33,7 +33,7 @@ const put = (id: string, body: unknown) =>
 const del = (id: string) => DELETE(new Request(url(id), { method: 'DELETE' }))
 
 const validBody = { category: 'דלק', description: 'תדלוק', amount: '180', expenseDate: '2026-11-06' }
-const row = { id: ID, category: 'דלק', description: 'תדלוק', amount_agorot: 18000, expense_date: '2026-11-06' }
+const row = { id: ID, kind: 'expense', category: 'דלק', description: 'תדלוק', amount_agorot: 18000, expense_date: '2026-11-06' }
 
 beforeEach(() => {
   db.rows = []
@@ -51,12 +51,13 @@ describe('PUT /api/expenses/:id', () => {
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({
       id: ID,
+      kind: 'expense',
       category: 'דלק',
       description: 'תדלוק',
       amount: '180.00',
       expenseDate: '2026-11-06',
     })
-    expect(db.lastValues).toEqual(['דלק', 'תדלוק', 18000, '2026-11-06', ID])
+    expect(db.lastValues).toEqual(['דלק', 'תדלוק', 18000, '2026-11-06', 'expense', ID])
     expect(db.lastQuery).toContain('update public.expenses')
   })
 

@@ -1,7 +1,9 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
 import { formatDisplayDate } from '../../../shared/dates'
 import { formatAgorotWithSeparators, parseShekelsToAgorot } from '../../../shared/money'
+import { KIND_LABELS } from '../../../shared/kinds'
 import type { Expense } from '../../../shared/types'
+import { summarize } from '../metrics/metrics'
 import { HEBREW_MONTHS, parseMaxAmount, type Filters } from '../filters/filterExpenses'
 import { toPdfRuns, wrapLines } from './rtl'
 
@@ -14,13 +16,13 @@ const DESCRIPTION_LINE_CHARS = 42
 export type ExportScope = 'all' | 'filtered'
 
 const COLORS = {
-  headerFill: '#0F1E34', // Panel Blue
+  headerFill: '#141B2B', // Graphite
   headerText: '#FFFFFF',
-  zebra: '#EEF4FB',
-  line: '#C9D6E6',
-  text: '#0A1020', // Deep Navy
-  muted: '#4A5A70',
-  accent: '#E91E8A', // Magenta
+  zebra: '#F1F5FB',
+  line: '#D3DBE7',
+  text: '#070B14', // Midnight
+  muted: '#4A5568',
+  positive: '#17855A', // darker Emerald, readable on white
 }
 
 /**
@@ -39,9 +41,14 @@ function amountText(amount: string): string {
   return parsed.ok ? formatAgorotWithSeparators(parsed.agorot) : amount
 }
 
+/** Agorot as "1,249.90", with a minus sign when refunds exceed expenses. */
+function signedShekels(agorot: number): string {
+  return agorot < 0 ? `-${formatAgorotWithSeparators(-agorot)}` : formatAgorotWithSeparators(agorot)
+}
+
 /** Human description of what is being exported, e.g. "הוצאות מסוננות: שנה 2026, נובמבר, עד ₪ 100.00". */
 export function describeScope(scope: ExportScope, filters: Filters): string {
-  if (scope === 'all') return 'כל ההוצאות'
+  if (scope === 'all') return 'כל הרישומים'
   const parts: string[] = []
   if (filters.year) parts.push(`שנה ${filters.year}`)
   if (filters.year && filters.month) parts.push(HEBREW_MONTHS[Number(filters.month) - 1])
@@ -50,7 +57,7 @@ export function describeScope(scope: ExportScope, filters: Filters): string {
   if (max.ok && max.agorot !== null && max.agorot < Number.MAX_SAFE_INTEGER) {
     parts.push(`עד ₪ ${formatAgorotWithSeparators(max.agorot)}`)
   }
-  return `הוצאות מסוננות: ${parts.length ? parts.join(', ') : 'ללא תנאים'}`
+  return `רישומים מסוננים: ${parts.length ? parts.join(', ') : 'ללא תנאים'}`
 }
 
 /**
@@ -58,25 +65,38 @@ export function describeScope(scope: ExportScope, filters: Filters): string {
  * (date on the right), because pdfmake itself only draws left to right.
  */
 export function buildPdfDefinition(expenses: readonly Expense[], scopeText: string, generatedOn: string): TDocumentDefinitions {
-  const header: TableCell[] = ['סכום (₪)', 'תיאור', 'קטגוריה', 'תאריך'].map((h) =>
+  const header: TableCell[] = ['סכום (₪)', 'תיאור', 'קטגוריה', 'סוג', 'תאריך'].map((h) =>
     rtlText(h, { bold: true, color: COLORS.headerText, fillColor: COLORS.headerFill, margin: [4, 6, 4, 6] }),
   )
 
-  const rows: TableCell[][] = expenses.map((e) => [
-    { text: amountText(e.amount), alignment: 'left', margin: [4, 4, 4, 4] },
-    rtlText(e.description ?? '', { margin: [4, 4, 4, 4] }, DESCRIPTION_LINE_CHARS),
-    rtlText(e.category, { margin: [4, 4, 4, 4] }),
-    { text: formatDisplayDate(e.expenseDate), alignment: 'right', margin: [4, 4, 4, 4] },
-  ])
+  const rows: TableCell[][] = expenses.map((e) => {
+    const kind = e.kind ?? 'expense'
+    const moneyIn = kind !== 'expense'
+    return [
+      {
+        text: `${moneyIn ? '+' : ''}${amountText(e.amount)}`,
+        alignment: 'left',
+        margin: [4, 4, 4, 4],
+        ...(moneyIn ? { color: COLORS.positive } : {}),
+      },
+      rtlText(e.description ?? '', { margin: [4, 4, 4, 4] }, DESCRIPTION_LINE_CHARS),
+      rtlText(e.category ?? '—', { margin: [4, 4, 4, 4] }),
+      rtlText(KIND_LABELS[kind], { margin: [4, 4, 4, 4] }),
+      { text: formatDisplayDate(e.expenseDate), alignment: 'right', margin: [4, 4, 4, 4] },
+    ]
+  })
+  const totals = summarize(expenses)
+  const totalsText = `הוצאות נטו: ₪ ${signedShekels(totals.netExpenses)} · הכנסות: ₪ ${formatAgorotWithSeparators(totals.income)}`
 
   const content: Content[] = [
     rtlText('דו"ח הוצאות', { fontSize: 22, bold: true, color: COLORS.text, margin: [0, 0, 0, 4] }),
     rtlText(scopeText, { fontSize: 12, color: COLORS.muted, margin: [0, 0, 0, 2] }),
-    rtlText(`הופק בתאריך ${generatedOn}`, { fontSize: 10, color: COLORS.muted, margin: [0, 0, 0, 16] }),
+    rtlText(`הופק בתאריך ${generatedOn}`, { fontSize: 10, color: COLORS.muted, margin: [0, 0, 0, 6] }),
+    rtlText(totalsText, { fontSize: 11, bold: true, color: COLORS.text, margin: [0, 0, 0, 16] }),
     {
       table: {
         headerRows: 1,
-        widths: [80, '*', 90, 80],
+        widths: [72, '*', 72, 50, 70],
         body: [header, ...rows],
       },
       layout: {

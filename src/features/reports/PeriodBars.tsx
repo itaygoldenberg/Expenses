@@ -1,9 +1,8 @@
-import { useId, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import type { ScriptableContext } from 'chart.js'
-import { ChevronDown } from 'lucide-react'
 import type { Expense } from '../../../shared/types'
-import fieldStyles from '../expenses/ExpenseForm.module.css'
+import { SegmentedControl, SelectField } from '../../ui'
 import { byMonth, byYear, formatValue, toChartNumber, yearsWithExpenses, type Metric } from './aggregate'
 import { GRID_COLOR, tooltipStyle } from './chartTheme'
 import styles from './Charts.module.css'
@@ -11,27 +10,26 @@ import styles from './Charts.module.css'
 type Grouping = 'month' | 'year'
 
 type Props = {
-  expenses: readonly Expense[]
+  expenses: Expense[]
   metric: Metric
 }
 
-/** Cyan → Violet gradient, as in the mockup. */
+/** Soft Blue → Cyan gradient (DESIGN 2.1). */
 function barGradient(ctx: ScriptableContext<'bar'>) {
   const { chart } = ctx
   const area = chart.chartArea
-  if (!area) return '#22E1FF'
+  if (!area) return '#6EA8FF'
   const g = chart.ctx.createLinearGradient(0, area.bottom, 0, area.top)
-  g.addColorStop(0, '#8B7CFF')
-  g.addColorStop(1, '#22E1FF')
+  g.addColorStop(0, '#6EA8FF')
+  g.addColorStop(1, '#5FD4E8')
   return g
 }
 
 export function PeriodBars({ expenses, metric }: Props) {
-  const id = useId()
   const years = useMemo(() => yearsWithExpenses(expenses), [expenses])
   const [grouping, setGrouping] = useState<Grouping>('month')
   const [chosenYear, setChosenYear] = useState('')
-  // Default (and fallback if the chosen year no longer has expenses): the newest year
+  // Default (and fallback if the chosen year no longer has records): the newest year
   const year = years.includes(chosenYear) ? chosenYear : (years[0] ?? '')
 
   const series = useMemo(
@@ -39,47 +37,28 @@ export function PeriodBars({ expenses, metric }: Props) {
     [expenses, metric, grouping, year],
   )
   const summary = series.map((s) => `${s.label} ${formatValue(s.value, metric)}`).join(', ')
-  const selectClass = `${fieldStyles.input} ${fieldStyles.select} ${styles.smallSelect}`
 
   return (
     <div className={styles.barsLayout}>
       <div className={styles.controls}>
-        <label className={styles.control}>
-          <span className="visually-hidden">קיבוץ</span>
-          <span className={fieldStyles.control}>
-            <select
-              id={`${id}-grouping`}
-              aria-label="קיבוץ"
-              className={selectClass}
-              value={grouping}
-              onChange={(e) => setGrouping(e.target.value as Grouping)}
-            >
-              <option value="month">לפי חודשים</option>
-              <option value="year">לפי שנים</option>
-            </select>
-            <ChevronDown className={fieldStyles.iconEnd} size={16} aria-hidden="true" />
-          </span>
-        </label>
+        <SegmentedControl
+          label="קיבוץ"
+          size="sm"
+          value={grouping}
+          onChange={setGrouping}
+          options={[
+            { value: 'month', label: 'לפי חודשים' },
+            { value: 'year', label: 'לפי שנים' },
+          ]}
+        />
         {grouping === 'month' && (
-          <label className={styles.control}>
-            <span className="visually-hidden">שנה</span>
-            <span className={fieldStyles.control}>
-              <select
-                id={`${id}-year`}
-                aria-label="שנה"
-                className={selectClass}
-                value={year}
-                onChange={(e) => setChosenYear(e.target.value)}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className={fieldStyles.iconEnd} size={16} aria-hidden="true" />
-            </span>
-          </label>
+          <SelectField
+            label="שנה"
+            className={styles.yearSelect}
+            options={years.map((y) => ({ value: y, label: y }))}
+            value={year}
+            onChange={(e) => setChosenYear(e.target.value)}
+          />
         )}
       </div>
 

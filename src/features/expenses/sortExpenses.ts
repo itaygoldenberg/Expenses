@@ -38,7 +38,7 @@ export function sortExpenses(expenses: readonly Expense[], sort: SortState): Exp
       case 'date':
         return a.expenseDate < b.expenseDate ? -1 : a.expenseDate > b.expenseDate ? 1 : 0
       case 'category':
-        return hebrew.compare(a.category, b.category)
+        return hebrew.compare(a.category ?? '', b.category ?? '')
       case 'amount':
         return agorot(a) - agorot(b)
     }

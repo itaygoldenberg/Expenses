@@ -21,17 +21,17 @@ describe('buildCsv', () => {
 
   it('starts with a UTF-8 BOM and Hebrew headers', () => {
     expect(csv.startsWith(BOM)).toBe(true)
-    expect(parsed[0]).toEqual(['תאריך', 'קטגוריה', 'תיאור', 'סכום (₪)'])
+    expect(parsed[0]).toEqual(['תאריך', 'סוג', 'קטגוריה', 'תיאור', 'סכום (₪)'])
   })
 
   it('writes one row per expense with formatted values', () => {
     expect(parsed).toHaveLength(4)
-    expect(parsed[1]).toEqual(['08/11/2026', 'מזון', 'סופרמרקט, "שופרסל"', '1249.90'])
-    expect(parsed[3]).toEqual(['05/01/2025', 'דלק', '', '180.00'])
+    expect(parsed[1]).toEqual(['08/11/2026', 'הוצאה', 'מזון', 'סופרמרקט, "שופרסל"', '1249.90'])
+    expect(parsed[3]).toEqual(['05/01/2025', 'הוצאה', 'דלק', '', '180.00'])
   })
 
   it('neutralizes text that a spreadsheet would run as a formula', () => {
-    expect(parsed[2][2]).toBe("'=SUM(1+1)")
+    expect(parsed[2][3]).toBe("'=SUM(1+1)")
     for (const bad of ['=1+1', '+1', '-1', '@cmd', '\t=x', '\r=x']) {
       expect(neutralizeFormula(bad).startsWith("'")).toBe(true)
     }
@@ -87,15 +87,15 @@ describe('toVisualRtl', () => {
 
 describe('buildPdfDefinition', () => {
   it('describes the export scope', () => {
-    expect(describeScope('all', EMPTY_FILTERS)).toBe('כל ההוצאות')
+    expect(describeScope('all', EMPTY_FILTERS)).toBe('כל הרישומים')
     expect(describeScope('filtered', { year: '2026', month: '11', day: '', maxAmount: '100' })).toBe(
-      'הוצאות מסוננות: שנה 2026, נובמבר, עד ₪ 100.00',
+      'רישומים מסוננים: שנה 2026, נובמבר, עד ₪ 100.00',
     )
-    expect(describeScope('filtered', EMPTY_FILTERS)).toBe('הוצאות מסוננות: ללא תנאים')
+    expect(describeScope('filtered', EMPTY_FILTERS)).toBe('רישומים מסוננים: ללא תנאים')
   })
 
   it('builds a right-to-left table with one row per expense', () => {
-    const def = buildPdfDefinition(list, 'כל ההוצאות', '09/11/2026')
+    const def = buildPdfDefinition(list, 'כל הרישומים', '09/11/2026')
     const table = (def.content as { table?: { body: unknown[][]; widths: unknown[] } }[]).find((c) => c.table)!.table!
     expect(table.body).toHaveLength(list.length + 1)
     // Joins a cell's runs as pdfmake receives them
@@ -104,9 +104,36 @@ describe('buildPdfDefinition', () => {
       return Array.isArray(t) ? t.map((s: { text: string }) => s.text).join('') : String(t)
     }
     const runsText = (s: string) => toPdfRuns(s).map((r) => r.text).join('')
-    // Columns from left to right: amount, description, category, date (date is on the right)
+    // Columns from left to right: amount, description, category, type, date (date is on the right)
     const header = table.body[0].map(cellText)
-    expect(header).toEqual([runsText('סכום (₪)'), runsText('תיאור'), runsText('קטגוריה'), runsText('תאריך')])
-    expect(table.body[1].map(cellText)).toEqual(['1,249.90', runsText('סופרמרקט, "שופרסל"'), 'מזון', '08/11/2026'])
+    expect(header).toEqual([runsText('סכום (₪)'), runsText('תיאור'), runsText('קטגוריה'), runsText('סוג'), runsText('תאריך')])
+    expect(table.body[1].map(cellText)).toEqual(['1,249.90', runsText('סופרמרקט, "שופרסל"'), 'מזון', runsText('הוצאה'), '08/11/2026'])
+  })
+})
+
+describe('record types in exports', () => {
+  const records: Expense[] = [
+    { id: 'a', kind: 'expense', category: 'מזון', description: null, amount: '100.00', expenseDate: '2026-11-03' },
+    { id: 'b', kind: 'refund', category: 'מזון', description: 'החזר', amount: '20.00', expenseDate: '2026-11-04' },
+    { id: 'c', kind: 'income', category: null, description: 'משכורת', amount: '5000.00', expenseDate: '2026-11-05' },
+  ]
+
+  it('CSV shows the type, and "—" for the category of income', () => {
+    const rows = Papa.parse<string[]>(buildCsv(records).slice(1), { skipEmptyLines: true }).data
+    expect(rows.slice(1).map((r) => [r[1], r[2]])).toEqual([
+      ['הוצאה', 'מזון'],
+      ['זיכוי', 'מזון'],
+      ['הכנסה', '—'],
+    ])
+  })
+
+  it('PDF lists net expenses and income, and marks money that came in with "+"', () => {
+    const def = buildPdfDefinition(records, 'כל הרישומים', '10/11/2026')
+    const json = JSON.stringify(def.content)
+    const runs = (s: string) => toPdfRuns(s).map((r) => r.text).join('')
+    const flat = json.replace(/"\},\{"text":"/g, '')
+    expect(flat).toContain(runs('הוצאות נטו: ₪ 80.00 · הכנסות: ₪ 5,000.00'))
+    const table = (def.content as { table?: { body: { text: unknown }[][] } }[]).find((c) => c.table)!.table!
+    expect(table.body[3][0].text).toBe('+5,000.00')
   })
 })

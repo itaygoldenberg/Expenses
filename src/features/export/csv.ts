@@ -1,9 +1,10 @@
 import Papa from 'papaparse'
 import { formatDisplayDate } from '../../../shared/dates'
 import { formatAgorot, parseShekelsToAgorot } from '../../../shared/money'
+import { KIND_LABELS } from '../../../shared/kinds'
 import type { Expense } from '../../../shared/types'
 
-export const CSV_HEADERS = ['תאריך', 'קטגוריה', 'תיאור', 'סכום (₪)'] as const
+export const CSV_HEADERS = ['תאריך', 'סוג', 'קטגוריה', 'תיאור', 'סכום (₪)'] as const
 
 /** UTF-8 byte order mark, so Excel opens Hebrew correctly. */
 export const BOM = '﻿'
@@ -25,7 +26,8 @@ function amountText(amount: string): string {
 export function buildCsv(expenses: readonly Expense[]): string {
   const rows = expenses.map((e) => [
     formatDisplayDate(e.expenseDate),
-    neutralizeFormula(e.category),
+    KIND_LABELS[e.kind ?? 'expense'],
+    e.category ? neutralizeFormula(e.category) : '—', // income has no category
     neutralizeFormula(e.description ?? ''),
     amountText(e.amount), // number only (no thousands separator) so Excel reads it as a number
   ])

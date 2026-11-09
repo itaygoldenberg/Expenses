@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { KIND_LABELS } from '../../../shared/kinds'
 import type { Expense } from '../../../shared/types'
 import { formatDisplayDate } from '../../../shared/dates'
-import { Modal } from '../../components/Modal'
 import { ApiRequestError } from '../../api/client'
-import { displayAmount } from './displayAmount'
+import { Button, Modal } from '../../ui'
+import { signedAmount } from './displayAmount'
 import styles from './DeleteExpenseDialog.module.css'
 
-export const DELETE_FAILED_MESSAGE = 'המחיקה נכשלה, ההוצאה לא נמחקה. נסו שוב.'
+export const DELETE_FAILED_MESSAGE = 'המחיקה נכשלה, הרישום לא נמחק. נסו שוב.'
 
 type Props = {
   expense: Expense
@@ -20,12 +21,8 @@ type Props = {
 export function DeleteExpenseDialog({ expense, onConfirm, onDeleted, onNotFound, onClose }: Props) {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const cancelRef = useRef<HTMLButtonElement>(null)
-
-  // Focus "ביטול" first, so pressing Enter never deletes by accident
-  useEffect(() => {
-    cancelRef.current?.focus()
-  }, [])
+  const label = KIND_LABELS[expense.kind]
+  const what = [expense.description, expense.category].filter(Boolean).join(' · ') || label
 
   async function handleDelete() {
     setDeleting(true)
@@ -41,8 +38,8 @@ export function DeleteExpenseDialog({ expense, onConfirm, onDeleted, onNotFound,
   }
 
   return (
-    <Modal title="מחיקת הוצאה" onClose={onClose} size="sm" busy={deleting}>
-      <p className={styles.question}>למחוק את ההוצאה?</p>
+    <Modal title={`מחיקת ${label}`} onClose={onClose} size="sm" busy={deleting}>
+      <p className={styles.question}>{`למחוק את ה${label}?`}</p>
       <dl className={styles.details}>
         <div>
           <dt>תאריך</dt>
@@ -51,13 +48,13 @@ export function DeleteExpenseDialog({ expense, onConfirm, onDeleted, onNotFound,
           </dd>
         </div>
         <div>
-          <dt>{expense.description ? 'תיאור' : 'קטגוריה'}</dt>
-          <dd>{expense.description ? `${expense.description} · ${expense.category}` : expense.category}</dd>
+          <dt>{expense.description ? 'תיאור' : expense.category ? 'קטגוריה' : 'סוג'}</dt>
+          <dd>{what}</dd>
         </div>
         <div>
           <dt>סכום</dt>
           <dd>
-            <span className="num">₪ {displayAmount(expense.amount)}</span>
+            <span className="num">{signedAmount(expense)}</span>
           </dd>
         </div>
       </dl>
@@ -70,13 +67,12 @@ export function DeleteExpenseDialog({ expense, onConfirm, onDeleted, onNotFound,
       )}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.danger} onClick={handleDelete} disabled={deleting}>
-          <Trash2 size={18} aria-hidden="true" />
+        <Button variant="danger" loading={deleting} icon={<Trash2 size={18} aria-hidden="true" />} onClick={handleDelete}>
           {deleting ? 'מוחק…' : 'מחיקה'}
-        </button>
-        <button ref={cancelRef} type="button" className={styles.cancel} onClick={onClose} disabled={deleting}>
+        </Button>
+        <Button variant="secondary" onClick={onClose} disabled={deleting} data-autofocus>
           ביטול
-        </button>
+        </Button>
       </div>
     </Modal>
   )

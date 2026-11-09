@@ -1,0 +1,73 @@
+.bar {
+  position: fixed;
+  z-index: 30;
+  inset-inline: var(--space-3);
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  height: 68px;
+  padding: 0 var(--space-1);
+  border-radius: var(--r-card);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-ui) var(--ease);
+}
+
+.tab:active {
+  transform: scale(0.96);
+}
+
+.active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.active svg {
+  color: var(--accent);
+}
+
+.add {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  box-shadow:
+    0 8px 22px rgb(110 168 255 / 0.4),
+    0 0 0 4px rgb(7 11 20 / 0.6);
+  transform: translateY(-10px);
+  transition: transform var(--dur-press) var(--ease);
+}
+
+.add:active {
+  transform: translateY(-10px) scale(0.95);
+}
+
+@media (min-width: 768px) {
+  .bar {
+    display: none;
+  }
+}

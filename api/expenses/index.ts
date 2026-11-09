@@ -15,7 +15,7 @@ export async function GET(): Promise<Response> {
   }
   try {
     const rows = await sql<ExpenseRow[]>`
-      select id, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
+      select id, kind, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
       from public.expenses
       order by expenses.expense_date desc, expenses.created_at desc
     `
@@ -46,9 +46,9 @@ export async function POST(request: Request): Promise<Response> {
   const v = result.value
   try {
     const [row] = await sql<ExpenseRow[]>`
-      insert into public.expenses (category, description, amount_agorot, expense_date)
-      values (${v.category}, ${v.description}, ${v.amountAgorot}, ${v.expenseDate})
-      returning id, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
+      insert into public.expenses (category, description, amount_agorot, expense_date, kind)
+      values (${v.category}, ${v.description}, ${v.amountAgorot}, ${v.expenseDate}, ${v.kind})
+      returning id, kind, category, description, amount_agorot, to_char(expense_date, 'YYYY-MM-DD') as expense_date
     `
     return json(rowToExpense(row), 201)
   } catch (err) {

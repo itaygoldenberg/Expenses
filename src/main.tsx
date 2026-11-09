@@ -1,8 +1,9 @@
+// Global styles first, so component CSS modules can override them
+import './styles/global.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { App } from './App'
-import './styles/global.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

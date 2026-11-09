@@ -1,7 +1,12 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { formatDisplayDate } from '../../../shared/dates'
+import { KIND_LABELS, type Kind } from '../../../shared/kinds'
+import type { Category } from '../../../shared/categories'
 import type { Expense } from '../../../shared/types'
-import { displayAmount } from './displayAmount'
+import { Badge, DataTable, IconButton, SelectField, type Column, type Tone } from '../../ui'
+import { categoryColor } from '../reports/categoryColors'
+import { cx } from '../../ui/cx'
+import { describeRecord, isMoneyIn, signedAmount } from './displayAmount'
 import { SORT_OPTIONS, type SortKey, type SortState } from './sortExpenses'
 import styles from './ExpenseList.module.css'
 
@@ -10,143 +15,113 @@ type Props = {
   sort: SortState
   onSortColumn: (key: SortKey) => void
   onSortChange: (sort: SortState) => void
-  /** When omitted (e.g. on the filters page), no edit/delete buttons are shown. */
+  /** When omitted, no edit/delete buttons are shown. */
   onEdit?: (expense: Expense) => void
   onDelete?: (expense: Expense) => void
 }
 
-function describe(e: Expense): string {
-  return `${e.description ?? e.category}, ${displayAmount(e.amount)} ₪, ${formatDisplayDate(e.expenseDate)}`
+export const KIND_TONES: Record<Kind, Tone> = { expense: 'neutral', refund: 'accent', income: 'positive' }
+
+export function KindBadge({ kind }: { kind: Kind }) {
+  return <Badge tone={KIND_TONES[kind]}>{KIND_LABELS[kind]}</Badge>
 }
 
-function SortHeader({
-  label,
-  column,
-  sort,
-  onSort,
-}: {
-  label: string
-  column: SortKey
-  sort: SortState
-  onSort: (key: SortKey) => void
-}) {
-  const active = sort.key === column
-  const Icon = !active ? ArrowUpDown : sort.direction === 'asc' ? ArrowUp : ArrowDown
+/** Category with its fixed chart color as a small dot. */
+export function CategoryTag({ category }: { category: Category | null }) {
+  if (!category) return <span className={styles.muted}>—</span>
   return (
-    <th scope="col" aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button
-        type="button"
-        className={`${styles.sortButton} ${active ? styles.sortActive : ''}`}
-        onClick={() => onSort(column)}
-      >
-        {label}
-        <Icon size={14} aria-hidden="true" />
-      </button>
-    </th>
+    <span className={styles.category}>
+      <span className={styles.dot} style={{ background: categoryColor(category) }} aria-hidden="true" />
+      {category}
+    </span>
   )
 }
 
-function Actions({
-  expense,
-  onEdit,
-  onDelete,
-}: {
-  expense: Expense
-  onEdit: NonNullable<Props['onEdit']>
-  onDelete: NonNullable<Props['onDelete']>
-}) {
+function Amount({ expense }: { expense: Expense }) {
+  return <span className={cx('num', isMoneyIn(expense) && styles.moneyIn)}>{signedAmount(expense)}</span>
+}
+
+function Actions({ expense, onEdit, onDelete }: { expense: Expense; onEdit: (e: Expense) => void; onDelete: (e: Expense) => void }) {
   return (
     <div className={styles.actions}>
-      <button
-        type="button"
-        className={`${styles.iconButton} ${styles.edit}`}
-        onClick={() => onEdit(expense)}
+      <IconButton
+        variant="ghost"
+        label={`עדכון: ${describeRecord(expense)}`}
         title="עדכון"
-        aria-label={`עדכון: ${describe(expense)}`}
-      >
-        <Pencil size={18} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        className={`${styles.iconButton} ${styles.delete}`}
-        onClick={() => onDelete(expense)}
+        icon={<Pencil size={18} aria-hidden="true" />}
+        onClick={() => onEdit(expense)}
+      />
+      <IconButton
+        variant="ghost"
+        className={styles.delete}
+        label={`מחיקה: ${describeRecord(expense)}`}
         title="מחיקה"
-        aria-label={`מחיקה: ${describe(expense)}`}
-      >
-        <Trash2 size={18} aria-hidden="true" />
-      </button>
+        icon={<Trash2 size={18} aria-hidden="true" />}
+        onClick={() => onDelete(expense)}
+      />
     </div>
   )
 }
 
+/** Records as a sortable glass table (tablet / desktop) and as cards with a sort select (phone). */
 export function ExpenseList({ expenses, sort, onSortColumn, onSortChange, onEdit, onDelete }: Props) {
   const selected = SORT_OPTIONS.find((o) => o.sort.key === sort.key && o.sort.direction === sort.direction)
-  const withActions = Boolean(onEdit && onDelete)
+
+  const columns: Column<Expense>[] = [
+    {
+      key: 'date',
+      header: 'תאריך',
+      sortable: true,
+      render: (e) => <span className="num">{formatDisplayDate(e.expenseDate)}</span>,
+    },
+    {
+      key: 'description',
+      header: 'תיאור',
+      render: (e) => (e.description ? <span className={styles.description}>{e.description}</span> : <span className={styles.muted}>—</span>),
+    },
+    { key: 'category', header: 'קטגוריה', sortable: true, render: (e) => <CategoryTag category={e.category} /> },
+    { key: 'kind', header: 'סוג', render: (e) => <KindBadge kind={e.kind} /> },
+    { key: 'amount', header: 'סכום (₪)', sortable: true, numeric: true, render: (e) => <Amount expense={e} /> },
+  ]
+  if (onEdit && onDelete) {
+    columns.push({ key: 'actions', header: 'פעולות', render: (e) => <Actions expense={e} onEdit={onEdit} onDelete={onDelete} /> })
+  }
 
   return (
     <>
-      {/* Desktop: table with sortable headers */}
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <SortHeader label="תאריך" column="date" sort={sort} onSort={onSortColumn} />
-              <th scope="col">תיאור</th>
-              <SortHeader label="קטגוריה" column="category" sort={sort} onSort={onSortColumn} />
-              <SortHeader label="סכום (₪)" column="amount" sort={sort} onSort={onSortColumn} />
-              {withActions && <th scope="col">פעולות</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.map((e) => (
-              <tr key={e.id}>
-                <td>
-                  <span className="num">{formatDisplayDate(e.expenseDate)}</span>
-                </td>
-                <td className={e.description ? undefined : styles.muted}>{e.description ?? '—'}</td>
-                <td>{e.category}</td>
-                <td>
-                  <span className="num">{displayAmount(e.amount)}</span>
-                </td>
-                {onEdit && onDelete && (
-                  <td>
-                    <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className={styles.table}>
+        <DataTable
+          caption="רשימת הרישומים"
+          columns={columns}
+          rows={expenses}
+          rowKey={(e) => e.id}
+          sort={sort}
+          onSort={(key) => onSortColumn(key as SortKey)}
+        />
       </div>
 
-      {/* Mobile: sort select + cards */}
       <div className={styles.mobile}>
-        <label className={styles.sortSelect}>
-          <span>מיון</span>
-          <select
-            value={selected?.value}
-            onChange={(ev) => {
-              const option = SORT_OPTIONS.find((o) => o.value === ev.target.value)
-              if (option) onSortChange(option.sort)
-            }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SelectField
+          label="מיון"
+          className={styles.sortSelect}
+          options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          value={selected?.value}
+          onChange={(ev) => {
+            const option = SORT_OPTIONS.find((o) => o.value === ev.target.value)
+            if (option) onSortChange(option.sort)
+          }}
+        />
         <ul className={styles.cards}>
           {expenses.map((e) => (
             <li key={e.id} className={styles.card}>
               <div className={styles.cardBody}>
                 <p className={styles.cardAmount}>
-                  <span className="num">₪ {displayAmount(e.amount)}</span>
+                  <Amount expense={e} />
                 </p>
-                <p className={styles.cardMeta}>{e.description ? `${e.description} · ${e.category}` : e.category}</p>
-                <p className={styles.cardDate}>
+                <p className={styles.cardMeta}>{[e.description, e.category].filter(Boolean).join(' · ') || KIND_LABELS[e.kind]}</p>
+                <p className={styles.cardFooter}>
                   <span className="num">{formatDisplayDate(e.expenseDate)}</span>
+                  {e.kind !== 'expense' && <KindBadge kind={e.kind} />}
                 </p>
               </div>
               {onEdit && onDelete && <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />}

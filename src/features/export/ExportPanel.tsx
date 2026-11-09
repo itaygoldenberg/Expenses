@@ -1,8 +1,8 @@
-import { useId, useMemo, useState } from 'react'
-import { ChevronDown, Download, FileDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Download, FileDown } from 'lucide-react'
 import type { Expense } from '../../../shared/types'
 import { formatDisplayDate, todayLocal } from '../../../shared/dates'
-import fieldStyles from '../expenses/ExpenseForm.module.css'
+import { Button, Card, SegmentedControl } from '../../ui'
 import { FilterFields } from '../filters/FilterFields'
 import { EMPTY_FILTERS, availableYears, filterExpenses, parseMaxAmount, type Filters } from '../filters/filterExpenses'
 import { sortExpenses, DEFAULT_SORT } from '../expenses/sortExpenses'
@@ -11,7 +11,7 @@ import { buildPdfDefinition, describeScope, type ExportScope } from './pdf'
 import { downloadCsv, downloadPdf } from './download'
 import styles from './ExportPanel.module.css'
 
-export const NO_EXPORT_MATCHES = 'אין הוצאות מתאימות לייצוא.'
+export const NO_EXPORT_MATCHES = 'אין רישומים מתאימים לייצוא.'
 export const PDF_FAILED = 'לא הצלחנו ליצור את קובץ ה-PDF. נסו שוב.'
 
 const MAX_AMOUNT_ERRORS = {
@@ -27,11 +27,10 @@ type Props = {
 }
 
 /**
- * Export area of the reports page. Its filters are its own: they never change
- * the charts and are unrelated to the filters page.
+ * Export card of the reports page. Its filters are its own: they never change
+ * the charts and are unrelated to the expenses page.
  */
 export function ExportPanel({ expenses, saveCsv = downloadCsv, savePdf = downloadPdf }: Props) {
-  const id = useId()
   const [scope, setScope] = useState<ExportScope>('all')
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [maxAmountError, setMaxAmountError] = useState<string>()
@@ -39,7 +38,7 @@ export function ExportPanel({ expenses, saveCsv = downloadCsv, savePdf = downloa
   const [busy, setBusy] = useState(false)
   const years = useMemo(() => availableYears(expenses), [expenses])
 
-  /** The expenses to export, or null (with a message) when there is nothing to export. */
+  /** The records to export, or null (with a message) when there is nothing to export. */
   function selection(): Expense[] | null {
     setMessage(null)
     if (scope === 'filtered') {
@@ -80,30 +79,19 @@ export function ExportPanel({ expenses, saveCsv = downloadCsv, savePdf = downloa
   }
 
   return (
-    <section className={styles.panel} aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className={styles.title}>
-        <FileDown size={22} aria-hidden="true" />
-        ייצוא הוצאות
-      </h2>
-
-      <div className={styles.scope}>
-        <label htmlFor={`${id}-scope`}>היקף ייצוא:</label>
-        <span className={fieldStyles.control}>
-          <select
-            id={`${id}-scope`}
-            className={`${fieldStyles.input} ${fieldStyles.select} ${styles.scopeSelect}`}
-            value={scope}
-            onChange={(e) => {
-              setScope(e.target.value as ExportScope)
-              setMessage(null)
-            }}
-          >
-            <option value="all">כל ההוצאות</option>
-            <option value="filtered">הוצאות מסוננות</option>
-          </select>
-          <ChevronDown className={fieldStyles.iconEnd} size={16} aria-hidden="true" />
-        </span>
-      </div>
+    <Card title="ייצוא" icon={<FileDown size={20} aria-hidden="true" />} className={styles.panel}>
+      <SegmentedControl
+        label="היקף ייצוא"
+        value={scope}
+        onChange={(v) => {
+          setScope(v)
+          setMessage(null)
+        }}
+        options={[
+          { value: 'all', label: 'כל הרישומים' },
+          { value: 'filtered', label: 'רישומים מסוננים' },
+        ]}
+      />
 
       {scope === 'filtered' && (
         <FilterFields
@@ -124,16 +112,14 @@ export function ExportPanel({ expenses, saveCsv = downloadCsv, savePdf = downloa
         </p>
       )}
 
-      <div className={fieldStyles.actions}>
-        <button type="button" className={fieldStyles.primary} onClick={handleCsv} disabled={busy}>
-          <Download size={18} aria-hidden="true" />
+      <div className={styles.actions}>
+        <Button icon={<Download size={18} aria-hidden="true" />} onClick={handleCsv} disabled={busy}>
           הורדת CSV
-        </button>
-        <button type="button" className={`${fieldStyles.secondary} ${styles.pdfButton}`} onClick={handlePdf} disabled={busy}>
-          <Download size={18} aria-hidden="true" />
+        </Button>
+        <Button variant="secondary" loading={busy} icon={<Download size={18} aria-hidden="true" />} onClick={handlePdf}>
           {busy ? 'מכין קובץ…' : 'הורדת PDF'}
-        </button>
+        </Button>
       </div>
-    </section>
+    </Card>
   )
 }

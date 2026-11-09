@@ -1,28 +1,37 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
-import { AboutPage, DEVELOPER } from './AboutPage'
+import { cleanup, render, screen, within } from '@testing-library/react'
+import { AboutPage, DEVELOPER, FEATURES, LINKS, TECH_STACK } from './AboutPage'
 
 afterEach(cleanup)
 
-describe('AboutPage', () => {
-  it('shows the system description and the developer section', () => {
+describe('AboutPage (portfolio)', () => {
+  it('shows the developer as provided: name, photo and description', () => {
     render(<AboutPage />)
-    expect(screen.getByRole('heading', { name: 'אודות המערכת' })).toBeInTheDocument()
-    expect(screen.getByText('מערכת לניהול הוצאות אישיות')).toBeInTheDocument()
-    expect(screen.getByText('הוספה, עדכון ומחיקה של הוצאות.')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'אודות המפתח/ת' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(`${DEVELOPER.name} — ${DEVELOPER.latinName}`)
+    expect(screen.getByRole('img', { name: `תמונת המפתח: ${DEVELOPER.name}` })).toHaveAttribute('src', DEVELOPER.photo)
+    expect(screen.getByText(DEVELOPER.description)).toBeInTheDocument()
   })
 
-  it('shows real details when provided, otherwise a marked placeholder (never invented)', () => {
+  it('lists the features and marks the ones not built yet as "בקרוב"', () => {
     render(<AboutPage />)
-    if (DEVELOPER) {
-      expect(screen.getByText(DEVELOPER.name, { selector: 'h3' })).toBeInTheDocument()
-      expect(screen.getByRole('img', { name: `תמונת המפתח: ${DEVELOPER.name}` })).toBeInTheDocument()
-    } else {
-      expect(screen.getByText('פרטי המפתח/ת יתווספו בהמשך.')).toBeInTheDocument()
-      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    for (const f of FEATURES) {
+      const card = screen.getByRole('heading', { name: new RegExp(f.title) }).closest('article')!
+      expect(within(card).queryByText('בקרוב') !== null).toBe(Boolean(f.soon))
     }
+  })
+
+  it('shows the technology chips and the footer', () => {
+    render(<AboutPage />)
+    for (const t of TECH_STACK) expect(screen.getByText(t)).toBeInTheDocument()
+    expect(screen.getByText('Developed by Itay Goldenberg')).toBeInTheDocument()
+    expect(screen.getByText('פותח בעזרת כלי AI (Claude Code) כחלק מתהליך הפיתוח.')).toBeInTheDocument()
+  })
+
+  it('hides GitHub / LinkedIn until links are provided', () => {
+    render(<AboutPage />)
+    if (!LINKS.github) expect(screen.queryByRole('link', { name: /GitHub/ })).not.toBeInTheDocument()
+    if (!LINKS.linkedin) expect(screen.queryByRole('link', { name: /LinkedIn/ })).not.toBeInTheDocument()
   })
 })
