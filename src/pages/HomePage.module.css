@@ -1,0 +1,88 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  position: relative;
+  padding: 24px 16px;
+  background: var(--panel-blue);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* Subtle neon wave accent from the mockups */
+.card::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: -40px;
+  top: -60px;
+  width: 260px;
+  height: 120px;
+  border-radius: 50%;
+  border-bottom: 2px solid rgb(255 59 120 / 0.35);
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.titleIcon {
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+
+.message {
+  color: var(--text-muted);
+  padding: 16px 0;
+}
+
+.errorBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: rgb(255 59 120 / 0.12);
+  border: 1px solid rgb(255 59 120 / 0.5);
+}
+
+.secondary {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  box-shadow: var(--glow-cyan);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--teal);
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 28px 32px;
+  }
+}

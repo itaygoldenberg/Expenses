@@ -1,177 +1,195 @@
-# Milestone 1 — הקמה, התחברות ואתר חי: תוכנית בנייה
+# Milestone 1 — יסודות הפרויקט ורישום הוצאה מקצה לקצה: תוכנית בנייה
 
-> מקורות: `MILESTONES.md` (Milestone 1), `PRD.md`, `ARCHITECTURE.md`, `DESIGN.md`.
-> תמונות ה-Wireframes / Mockups / Style Guide עדיין placeholders — הבנייה מתבססת על הטקסט ב-DESIGN.md בלבד.
-> שם האפליקציה (מוצג במסך ההתחברות ובכותרת הדפדפן): **"הוצאות"** — אושר על ידי המשתמש.
+> מקורות: `MILESTONES.md` (Milestone 1), `PRD.md`, `ARCHITECTURE.md` (גרסה 2.0), `DESIGN.md`, והתמונות `wireframes-desktop.png`, `wireframes-mobile.png`, `mockups-desktop.png`, `mockups-mobile.png`, `style-guide.png`.
+> התוכנית מחליפה תוכנית קודמת שנכתבה לפי spec ישן (אפליקציה עם התחברות). הקוד הקיים ב-repo נבנה לפי ה-spec הישן — חלקו נשמר וחלקו מוסר (סעיף 3).
+>
+> **עדכון במהלך הבנייה (ADR-1 ב-ARCHITECTURE.md, באישור המשתמש):** החיבור למסד הנתונים עבר לשיטת המרצה, וזה גובר על הכתוב בהמשך התוכנית:
+> - במקום `@supabase/supabase-js` עם `SUPABASE_URL`/`SUPABASE_SECRET_KEY`: הספרייה `postgres` עם משתנה יחיד `DATABASE_URL` (משתמש `app_backend`, Transaction pooler, פורט 6543). הקובץ `api/_lib/supabaseAdmin.ts` הוחלף ב-`api/_lib/db.ts`.
+> - Data API כבוי בשני הפרויקטים; ה-Migration מעניקה ל-`app_backend` הרשאות CRUD ו-Policy של RLS.
+> - המשתמש יוצר ב-Development את `app_backend` ב-SQL Editor, ומריץ שם את ה-Migration (ה-Supabase MCP לא זמין בשיחה הנוכחית).
+> - Production: Supabase GitHub Integration (במקום GitHub Actions) — יוגדר ב-Milestone 6.
+> - בדיקת "קריאה ישירה נחסמת": קריאת REST לפרויקט נכשלת כי ה-Data API כבוי, ו-`anon` בלי הרשאות.
 
 ## 1. מטרה ותחום
 
-בסוף ה-Milestone:
-- פרויקט React + Vite + TypeScript + Tailwind רץ מקומית, בעברית ו-RTL, עם הגופן Rubik וצבעי ה-Style Guide.
-- התחברות עם אימייל וסיסמה דרך Supabase Auth (משתמש יחיד, בלי הרשמה).
-- מעטפת ניווט: סרגל לשוניות בתחתית בטלפון, תפריט צד מימין במחשב.
-- כל המסכים קיימים כמסכים ריקים עם כותרת בלבד.
-- Vitest מותקן ויש פקודת הרצה.
-- האתר מפורסם ב-Vercel ומחובר ל-Supabase Production (בזמן הדחיפה, באישור המשתמש).
+**בסוף ה-Milestone:** פותחים את האתר מקומית, ממלאים טופס "הוספת הוצאה", ההוצאה עוברת Browser → `/api/expenses` → Supabase **Development**, ומופיעה ברשימה — וגם אחרי Reload.
 
-**מחוץ לתחום של Milestone זה:** טבלאות במסד הנתונים, migrations, טופס הרישום (כפתור ➕ קיים אבל עדיין לא פותח כלום — הטופס נבנה ב-Milestone 2), Recharts, SheetJS.
+**בתחום:**
+- שלד הפרויקט לפי ARCHITECTURE: React + TS + Vite, **CSS Modules + CSS רגיל** (לא Tailwind), React Router, Vercel Functions, Zod, Vitest + React Testing Library.
+- Migration ראשונה: טבלת `public.expenses` + RLS בלי גישה ל-`anon`/`authenticated`. מורצת על Development בלבד.
+- API: `GET /api/expenses`, `POST /api/expenses` בלבד.
+- דף הבית: טופס הוספה עם כל כללי הוולידציה + רשימת ההוצאות (קריאה בלבד) + מצבי טעינה / ריק / שגיאה.
+- Layout משותף: כותרת "ניהול הוצאות" וניווט לארבעת הדפים (פס עליון במחשב, פס תחתון בטלפון), עיצוב כהה לפי ה-Style Guide.
+- מניעת Production Deployment אוטומטי של Vercel מ-`main`.
 
-## 2. תלויות (npm)
+**מחוץ לתחום (Milestones הבאים):** עדכון/מחיקה (`PUT`/`DELETE`, Modal, Dialog) ומיון — M2; תוכן דפי פילטרים / דו"חות / אודות — M3–M5 (בשלב זה כל אחד מהם מציג רק את הכותרת שלו); Chart.js, Papa Parse, pdfmake — לא מותקנים; GitHub Actions וכל נגיעה ב-Supabase Production — M6.
 
-| חבילה | למה |
-|-------|-----|
-| `react`, `react-dom` | ה-UI |
-| `react-router` (v7, library mode) | ניווט בין מסכים |
-| `@supabase/supabase-js` | התחברות (ובהמשך נתונים) |
-| `lucide-react` | אייקונים קוויים (סגנון Lucide לפי DESIGN) |
-| dev: `vite`, `@vitejs/plugin-react`, `typescript`, `@types/react`, `@types/react-dom` | בנייה |
-| dev: `tailwindcss`, `@tailwindcss/vite` (Tailwind v4) | עיצוב |
-| dev: `vitest` | בדיקות אוטומטיות |
+## 2. החלטות טכניות לאבן הדרך (יתועדו כ-ADR ב-ARCHITECTURE.md)
 
-Recharts ו-SheetJS **לא** מותקנים עכשיו — רק ב-Milestones שצריכים אותם.
+1. **הרצת ה-API מקומית בלי Vercel CLI.** ARCHITECTURE מתיר "API מקומי שמחובר ל-Dev". הפונקציות נכתבות בתיקיית `api/` בפורמט Vercel Functions (Web standard: `export async function GET(request: Request)` / `POST`), ובפיתוח מקומי Plugin קטן ב-`vite.config.ts` מנתב בקשות `/api/*` לאותן פונקציות בדיוק (דרך `server.ssrLoadModule`). כך `npm run dev` אחד מריץ אתר + API, בלי התחברות ל-Vercel מהמחשב.
+2. **הרצת Migrations על Development דרך חיבור ה-Supabase MCP** שכבר הוגדר בפרויקט (`.mcp.json`), שמוגבל לפרויקט ה-Development בלבד (`project_ref=vlezqqgleidvqrwwpdkf`) — כך אין אפשרות טכנית לגעת ב-Production. קובץ ה-SQL נשמר ב-`supabase/migrations/<version>_create_expenses.sql`, ושם הגרסה בקובץ יהיה **זהה** לגרסה שנרשמת ב-Development, כדי ש-`supabase db push` ב-M6 יעבוד בלי התנגשויות. חלופה אם ה-MCP לא זמין: `npx supabase` CLI (דורש Access Token — הדרכה צעד אחר צעד).
+3. **שם קובץ הסודות המקומי:** CLAUDE.md קובע `.env` (שכבר קיים ומוחרג מ-Git), ו-ARCHITECTURE מזכיר `.env.local`. Vite וה-Plugin טוענים את שניהם; **נשארים עם `.env`** לפי CLAUDE.md, בלי ליצור קובץ נוסף.
+4. **גופן:** Heebo (מתוך "Heebo / Assistant" ב-Style Guide), דרך Google Fonts; ספרות ב-Inter לפי ה-Style Guide (`font-family: Heebo, Inter, sans-serif` + `tabular-nums`).
 
-## 3. קבצים ליצור / לשנות
+## 3. מה קורה לקוד הקיים
+
+| נשמר | מוסר / מוחלף |
+|------|------|
+| `package.json`, Vite, TypeScript, React, React Router, Vitest, `lucide-react` (אייקוני Outline כמו ב-Style Guide) | Tailwind (`tailwindcss`, `@tailwindcss/vite`) → CSS Modules |
+| `index.html` (עברית/RTL) — מתעדכן: כותרת "ניהול הוצאות", Heebo + Inter, `theme-color` כהה | כל קוד ההתחברות: `src/features/auth/*`, `src/lib/supabase.ts` (הדפדפן לא מדבר עוד עם Supabase) |
+| `.claude/launch.json`, `.mcp.json`, Agent Skills | `MorePage`, `navItems` הישנים, `AppLayout` הישן (נכתב מחדש) |
+| `@supabase/supabase-js` — עובר לשימוש **בצד השרת בלבד** | משתני `VITE_SUPABASE_*` ב-`.env.example` |
+
+## 4. תלויות
+
+- **להוסיף:** `zod`; dev: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, `jsdom`, `@vercel/node` (טיפוסים בלבד, אם יידרש).
+- **להסיר:** `tailwindcss`, `@tailwindcss/vite`.
+
+## 5. קבצים
 
 ```
-package.json                 scripts: dev, build, preview, test
-index.html                   <html lang="he" dir="rtl">, <title>הוצאות</title>, Rubik מ-Google Fonts, viewport
-vite.config.ts               react + tailwind plugins; הגדרת vitest (environment: node)
-tsconfig.json (+ tsconfig.app.json, tsconfig.node.json)   לפי תבנית Vite
-vercel.json                  rewrite של כל הכתובות ל-/index.html
-.env.example                 VITE_SUPABASE_URL=, VITE_SUPABASE_ANON_KEY=  (בלי ערכים)
-.env                         העתק חד-פעמי של .env.example — המשתמש ממלא (Claude לא קורא אותו)
+vercel.json                     rewrites: כל נתיב שאינו /api/* → /index.html;
+                                git.deploymentEnabled.main = false  (אין Auto-Deploy ל-Production מ-Vercel)
+.env.example                    SUPABASE_URL=, SUPABASE_SECRET_KEY=   (בלי ערכים, בלי VITE_)
+vite.config.ts                  react() + devApi() plugin; vitest: environment jsdom לקבצי UI, node ל-API
+supabase/migrations/<version>_create_expenses.sql
+
+shared/                         קוד משותף ל-Frontend ול-Backend (ללא תלות ב-DOM או ב-Node)
+  categories.ts                 11 הקטגוריות לפי PRD, בסדר: מזון, דלק, פנאי, רשויות, בריאות, קניות, תחבורה, דיור, חינוך, אחר, הכשרה
+  money.ts                      parseShekelsToAgorot("49.9") → 4990 (מחרוזת → שלמים, בלי float); formatAgorot(4990) → "49.90"
+  dates.ts                      todayInJerusalem() → "YYYY-MM-DD"; isValidIsoDate; isFutureDate
+  expenseSchema.ts              Zod: גוף Create { category, description, amount, expenseDate } + הודעות שגיאה בעברית
+  types.ts                      Expense { id, category, description, amount (string "249.90"), expenseDate }
+  *.test.ts                     בדיקות לכל הנ"ל
+
+api/
+  expenses/index.ts             GET → כל ההוצאות ממוינות expense_date DESC, created_at DESC; POST → ולידציה Zod → insert → 201
+  _lib/supabaseAdmin.ts         createClient(SUPABASE_URL, SUPABASE_SECRET_KEY) — שרת בלבד; שגיאה ברורה אם חסר משתנה
+  _lib/http.ts                  json(), errorResponse(code, message, status), הגבלת גודל גוף (למשל 10KB), 405 ל-Method אחר
+  _lib/expenseRow.ts            המרה בין שורת DB (amount_agorot, expense_date) לבין Expense של ה-API
+  expenses.test.ts              בדיקות ה-Handlers עם Supabase מדומה (mock): 201, 400 לכל כלל, 405, 500 בלי חשיפת פרטים
+
 src/
-  main.tsx                   createRoot + BrowserRouter + AuthProvider
-  App.tsx                    הגדרת הנתיבים
-  index.css                  @import "tailwindcss"; @theme עם צבעים וגופן; רקע/טקסט בסיס
-  vite-env.d.ts              טיפוסים ל-import.meta.env
-  lib/
-    supabase.ts              createClient מתוך משתני הסביבה; שגיאה ברורה אם חסרים
-  features/auth/
-    AuthProvider.tsx         Context: session, loading, signIn, signOut; getSession + onAuthStateChange
-    RequireAuth.tsx          אם loading → מסך טעינה; אם אין session → <Navigate to="/login">
-    LoginPage.tsx            מסך ההתחברות
-    authErrors.ts            פונקציה טהורה: שגיאת Supabase → הודעה בעברית
-    authErrors.test.ts       בדיקות Vitest לפונקציה
-  components/
-    AppLayout.tsx            מעטפת: תפריט צד (מחשב) / סרגל לשוניות (טלפון) + <Outlet/>
-    navItems.ts              רשימת הלשוניות (נתיב, תווית, אייקון) — מקור אחד לשני סוגי הניווט
-    PageTitle.tsx            כותרת מסך אחידה (22px / 600)
-  pages/  (או בתוך features — מסך ריק לכל אחד)
-    SummaryPage.tsx          "סיכום"
-    TransactionsPage.tsx     "רישומים"
-    RecurringPage.tsx        "הוצאות קבועות"
-    MorePage.tsx             "עוד" + קישורים
-    CategoriesPage.tsx       "קטגוריות"
-    ImportPage.tsx           "ייבוא קובץ"
+  main.tsx, App.tsx             BrowserRouter; נתיבים: / (בית), /filters, /reports, /about, * → /
+  styles/global.css             משתני צבע, גופן, רקע, RTL, focus ברור
+  components/Layout.tsx (+ .module.css)   כותרת "ניהול הוצאות" + ניווט 4 קישורים: עליון במחשב, תחתון בטלפון
+  components/PageTitle.tsx
+  api/client.ts                 fetchExpenses(), createExpense(); מבחין בין שגיאת ולידציה (400) לשגיאת רשת/שרת
+  pages/HomePage.tsx (+ .module.css)
+  features/expenses/ExpenseForm.tsx (+ .module.css)
+  features/expenses/ExpenseList.tsx (+ .module.css)   טבלה במחשב, כרטיסים בטלפון
+  features/expenses/ExpenseForm.test.tsx              RTL: ברירת מחדל של תאריך, הודעות ולידציה, אין שליחה כשקלט שגוי
+  pages/FiltersPage.tsx, ReportsPage.tsx, AboutPage.tsx   כותרת בלבד ("סינון הוצאות", "דו"חות וניתוח הוצאות", "אודות המערכת")
 ```
 
-מבנה התיקיות ב-`src/` לפי ARCHITECTURE.md: מסכים ריקים של יכולות עתידיות יישבו כבר בתיקיית ה-feature שלהם (`features/summary/SummaryPage.tsx`, `features/transactions/...` וכו'), כדי שלא יהיה צורך להזיז אותם אחר כך. `MorePage` ב-`components/` (אינו feature).
+`tsconfig.json` יכלול את `src`, `shared`, `api`. ייבוא יחסי בתוך `api/` ו-`shared/` עם סיומת `.js` (נדרש ל-ESM בפונקציות של Vercel; TypeScript ו-Vite מתרגמים לקובץ `.ts`).
 
-`.gitignore` כבר מכסה `node_modules/`, `dist/`, `.env`, `.vercel/` — אין צורך בשינוי.
+## 6. מסד הנתונים (Migration ראשונה)
 
-## 4. נתיבים (React Router)
+```sql
+create table public.expenses (
+  id uuid primary key default gen_random_uuid(),
+  category text not null check (category in ('מזון','דלק','פנאי','רשויות','בריאות','קניות','תחבורה','דיור','חינוך','אחר','הכשרה')),
+  description text,
+  amount_agorot integer not null check (amount_agorot between 1 and 10000000),
+  expense_date date not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint description_required_for_other
+    check (category <> 'אחר' or (description is not null and length(btrim(description)) > 0))
+);
+create index expenses_expense_date_idx on public.expenses (expense_date desc);
+-- updated_at: trigger function שמעדכנת now() ב-UPDATE
+alter table public.expenses enable row level security;
+revoke all on table public.expenses from anon, authenticated;
+-- אין Policies: רק מפתח ה-Secret בשרת (שעוקף RLS) ניגש לטבלה
+```
 
-| נתיב | מסך | הגנה |
-|------|-----|------|
-| `/login` | התחברות (בלי ניווט). משתמש מחובר שמגיע לכאן מועבר ל-`/` | ציבורי |
-| `/` | סיכום (מסך הבית) | מוגן |
-| `/transactions` | רישומים | מוגן |
-| `/recurring` | הוצאות קבועות | מוגן |
-| `/more` | עוד | מוגן |
-| `/categories` | קטגוריות (דרך "עוד") | מוגן |
-| `/import` | ייבוא קובץ (דרך "עוד") | מוגן |
-| `*` | הפניה ל-`/` | — |
+**בדיקות אחרי ההרצה (על Development):** הטבלה, האילוצים והאינדקס קיימים; `insert` עם סכום 0 / קטגוריה לא מוכרת / "אחר" בלי תיאור נכשל ב-DB; קריאת REST ישירה ל-`/rest/v1/expenses` עם ה-Publishable key של Development מחזירה שגיאת הרשאה ולא נתונים.
 
-כל הנתיבים המוגנים עטופים ב-`RequireAuth` → `AppLayout`.
+## 7. API
 
-## 5. התחברות — התנהגות
+- **`GET /api/expenses`** → `200` עם מערך `{ id, category, description, amount, expenseDate }`. `amount` כמחרוזת שקלים עם 2 ספרות ("249.90"), מחושבת מאגורות בשלמים.
+- **`POST /api/expenses`** → גוף `{ category, description, amount, expenseDate }`:
+  - `amount` מתקבל כמחרוזת (או מספר) ונבדק בביטוי `^\d+(\.\d{1,2})?$`, מומר לאגורות, וחייב להיות 1..10,000,000.
+  - `expenseDate` בפורמט `YYYY-MM-DD`, תאריך קיים, **לא אחרי היום לפי `Asia/Jerusalem`**.
+  - `description`: נחתך מרווחים; ריק → `null`; חובה כשהקטגוריה "אחר"; אורך מקסימלי סביר (למשל 200 תווים).
+  - הצלחה → `201` עם ההוצאה שנוצרה.
+- **שגיאות:** `400 VALIDATION_ERROR` (עם פירוט שדות להצגה בטופס), `405 METHOD_NOT_ALLOWED`, `413` לגוף גדול מדי, `500/503 SERVER_ERROR` — בגוף אחיד `{"error":{"code","message"}}`, בלי SQL, מפתחות או Stack Trace.
 
-- `AuthProvider` טוען את ה-session הקיים (`supabase.auth.getSession()`) ומאזין ל-`onAuthStateChange`. עד שהטעינה הראשונה מסתיימת — מוצג מסך טעינה פשוט (כדי שלא יהיה "הבהוב" של מסך ההתחברות אצל משתמש מחובר).
-- **מסך ההתחברות** (לפי DESIGN): "הוצאות" בראש, שדה אימייל (`type=email`, `autocomplete=username`), שדה סיסמה (`type=password`, `autocomplete=current-password`), אזור הודעת שגיאה מעל הכפתור, כפתור "כניסה" ברוחב מלא. אין קישור להרשמה. בזמן שליחה הכפתור מושבת.
-  - תוויות: "אימייל", "סיסמה".
-  - שדות אימייל וכתובות מוצגים LTR בתוך הטופס (`dir="ltr"`), התווית נשארת מימין.
-- **שגיאות (`authErrors.ts`):**
-  - פרטים שגויים (`invalid_credentials` / סטטוס 400) → **"אימייל או סיסמה שגויים"** (לפי ה-DoD).
-  - שדה ריק → חסימה בדפדפן (`required`) בלי פנייה לשרת.
-  - כל שגיאה אחרת (למשל אין אינטרנט) → **"לא הצלחנו להתחבר — בדוק את החיבור לאינטרנט ונסה שוב"** (נוסח מותאם מהודעת "אין אינטרנט" שב-DESIGN.md; אם תרצה נוסח אחר — אפשר לשנות).
-- כניסה מוצלחת → ניווט ל-`/`.
-- **התנתקות:** ב"עוד" ← "התנתקות" → `supabase.auth.signOut()` → ניווט ל-`/login`. ה-session נמחק מהדפדפן, כך שרענון לא מחזיר פנימה.
-- **אין הרשמה:** אין שום קריאה ל-`signUp` בקוד, וההרשמה מבוטלת גם בהגדרות שני פרויקטי Supabase (ראה סעיף 8).
+## 8. דף הבית — ממשק
 
-## 6. מעטפת הניווט ועיצוב
+**טופס "הוספת הוצאה"** (שדות לפי DESIGN, במחשב בשתי עמודות, בטלפון אחד מתחת לשני):
+- **קטגוריה** — Select, אפשרות פתיחה "בחר קטגוריה" + 11 הקטגוריות.
+- **תיאור** — טקסט, placeholder "תיאור ההוצאה (אופציונלי)"; כשנבחר "אחר" ה-placeholder משתנה ל"תיאור ההוצאה (חובה)".
+- **סכום (₪)** — `inputMode="decimal"`, placeholder "0.00".
+- **תאריך** — `type="date"`, ברירת מחדל היום (תאריך מקומי), `max` = היום.
+- כפתור **"הוסף הוצאה"** (Primary, Pink→Magenta). בזמן שליחה: מושבת, טקסט "שומר…".
 
-**Tailwind theme (`index.css`, `@theme`)** — צבעים מה-Style Guide כשמות קבועים:
-`primary #15803D`, `primary-light #DCFCE7`, `income #15803D`, `expense #DC2626`, `warning-bg #FEF3C7`, `warning-text #B45309`, `bg #F6FAF7`, `surface #FFFFFF`, `text #1F2937`, `muted #6B7280`, `border #E5E7EB`; גופן `Rubik`. רקע הדף `bg`, טקסט 16px, `font-variant-numeric: tabular-nums` כברירת מחדל לסכומים (ישמש בהמשך).
+**הודעות ולידציה** (מוצגות מתחת לשדה; אותו נוסח מגיע מה-Backend דרך `shared/expenseSchema.ts`). ה-PRD לא מגדיר נוסחים, ולכן אלה הצעה:
+- קטגוריה חסרה: "יש לבחור קטגוריה"
+- "אחר" בלי תיאור: "בקטגוריה 'אחר' יש להזין תיאור"
+- סכום חסר: "יש להזין סכום"
+- סכום לא חוקי / 0 / שלילי: "יש להזין סכום חיובי"
+- יותר משתי ספרות אחרי הנקודה: "עד שתי ספרות אחרי הנקודה"
+- מעל 100,000: "הסכום המרבי הוא ₪100,000"
+- תאריך חסר / לא חוקי: "יש לבחור תאריך תקין"
+- תאריך עתידי: "לא ניתן לבחור תאריך עתידי"
 
-**לשוניות (`navItems.ts`)** — סדר מימין לשמאל: **סיכום** (`/`) · **רישומים** (`/transactions`) · **➕ הוספה** · **קבועות** (`/recurring`) · **עוד** (`/more`). אייקונים מ-Lucide (למשל `PieChart`, `List`, `Plus`, `Repeat`, `Menu`).
+**אחרי שמירה:** רק לאחר `201` — הטופס מתאפס (קטגוריה ריקה, תאריך היום), הרשימה נטענת מחדש, ומופיעה הודעה קצרה "ההוצאה נשמרה". כשל רשת/שרת — הודעה אדומה "השמירה נכשלה, ההוצאה לא נשמרה. נסו שוב." והקלט נשאר בטופס.
 
-**טלפון (< 768px, `md` ב-Tailwind):**
-- סרגל קבוע בתחתית, רקע לבן, צל עליון רך; כל לשונית: אייקון + תווית 14px.
-- לשונית פעילה בירוק (`primary`), השאר באפור (`muted`).
-- כפתור ההוספה באמצע: עגול, ירוק, בולט (מוגבה מעט מעל הסרגל), אייקון `+` לבן.
-- לתוכן יש ריפוד תחתון כדי שהסרגל לא יסתיר אותו; ריפוד צד 16px; תמיכה ב-`safe-area-inset-bottom` (אייפון).
+**"רשימת הוצאות"** (מתחת לקו מפריד):
+- **מחשב:** טבלה — תאריך, תיאור, קטגוריה, סכום (₪). בלי עמודת "פעולות" (נוספת ב-M2). סדר: מהחדש לישן (מה-API).
+- **טלפון:** כרטיס לכל הוצאה — סכום בולט "₪ 249.90", תיאור · קטגוריה, תאריך.
+- תאריכים מוצגים `DD/MM/YYYY`, סכומים עם 2 ספרות; שניהם עטופים ב-`dir="ltr"`/`<bdi>` כדי שלא יתהפכו.
+- **טעינה:** "טוען הוצאות…".
+- **ריק:** "עדיין אין הוצאות. אפשר להוסיף את הראשונה בטופס למעלה."
+- **כשל טעינה:** "לא הצלחנו לטעון את ההוצאות" + כפתור "נסו שוב" — **לעולם לא** מוצג כרשימה ריקה.
 
-**מחשב (≥ 768px):**
-- תפריט צד קבוע בצד **ימין** (טבעי ב-RTL), רקע לבן.
-- בראשו "הוצאות" וכפתור "הוספה" ירוק ברוחב התפריט (48px, פינות 12px).
-- מתחתיו הלשוניות סיכום · רישומים · קבועות · עוד; פעילה עם רקע `primary-light` וטקסט ירוק.
-- התוכן במרכז השטח הנותר, `max-width: 960px`.
+## 9. עיצוב (לפי Style Guide ו-Mockups)
 
-**כפתור ההוספה ב-Milestone 1:** מוצג בשני המצבים, אבל עדיין לא פותח כלום (`onClick` ריק עם הערה `// TODO(milestone-2): open transaction form`). הטופס נבנה ב-Milestone 2.
+- **צבעים** כמשתני CSS ב-`global.css`: `--deep-navy #0A1020` (רקע), `--panel-blue #0F1E34` (כרטיסים ושדות), `--cyan #22E1FF`, `--aqua #4DE8DC`, `--teal #2DD4BF`, `--hot-pink #FF3B78`, `--magenta #E91E8A`, `--violet #8B7CFF`, `--text-light #EAF2FF`. טקסט משני: `--text-light` בשקיפות (לא HEX חדש).
+- **טיפוגרפיה:** H1 32/700, H2 24/700, H3 20/600, Body 16/400, Caption 12/400.
+- **רכיבים:** כפתור Primary עם Gradient Pink→Magenta; שדות כהים עם מסגרת דקה בגוון Cyan שקוף ו-Glow עדין בפוקוס; כרטיסים Panel Blue עם גבול דק; Radius 8–16px; מרווחים בכפולות 8px.
+- **ניווט:** מחשב — פס עליון: "ניהול הוצאות" + אייקון מימין, קישורים "בית · פילטרים · דו"חות · אודות", הפעיל בגלולה עם Glow ב-Cyan. טלפון (< 768px) — כותרת עליונה + **פס ניווט תחתון** עם 4 אייקונים ותוויות. ה-Wireframe הנייד מציג גם אייקון "המבורגר" בכותרת — **לא** ממומש, כי DESIGN קובע שהפס התחתון הוא הייחוס ושאין להוסיף ניווט נוסף.
+- גל ה-Neon הדקורטיבי מה-Mockups: לא חובה ב-M1 (DESIGN: "הדגשה גרפית מינורית").
 
-**לשונית "עוד" פעילה** גם כשנמצאים ב-`/categories` או `/import` (שאליהם מגיעים דרכה).
+## 10. בדיקות אוטומטיות
 
-**מסכים ריקים:** כל מסך מציג רק `PageTitle` עם הכותרת שלו. מסך "עוד" מציג גם את רשימת הקישורים: "קטגוריות", "ייבוא קובץ", "התנתקות" (כרטיס לבן, פינות 16px, שורה לכל קישור בגובה 48px לפחות, חץ שמתהפך ל-RTL).
+- `shared/`: המרת סכומים (`"0.1"`→10, `"49.90"`→4990, `"100000"`→10000000, דחיית `"1.234"`, `"-5"`, `"0"`, `"abc"`, `"100000.01"`), תאריך עתידי לפי ירושלים, כל כללי ה-Schema.
+- `api/`: Handlers עם Supabase מדומה — 201 בהצלחה, 400 לכל כלל, 405, 500 בלי חשיפת פרטים, המרת אגורות.
+- `src/`: טופס — תאריך ברירת מחדל, הודעות שגיאה, אין קריאה ל-API כשהקלט שגוי.
+- `npm test` ו-`npm run build` (כולל Type Check) עוברים.
 
-## 7. בדיקות אוטומטיות (Vitest)
+## 11. מה המשתמש עושה (הדרכה צעד אחר צעד בזמן הבנייה)
 
-- `npm test` → `vitest run`.
-- `authErrors.test.ts`: שגיאת פרטים שגויים → "אימייל או סיסמה שגויים"; שגיאת רשת / לא מוכרת → הודעת החיבור.
-- `environment: node` (אין צורך ב-jsdom ב-Milestone זה; המסכים נבדקים ידנית לפי ARCHITECTURE).
+1. **מפתח Secret של Development:** Supabase → `expenses-dev` → Project Settings → API Keys → Secret keys → יצירה/העתקה של מפתח `sb_secret_...`. ב-`.env`: למחוק את שתי שורות ה-`VITE_SUPABASE_*`, ולהוסיף `SUPABASE_URL=` (אותה כתובת כמו קודם) ו-`SUPABASE_SECRET_KEY=`. לא להדביק בשיחה.
+2. **Vercel:** למחוק מ-Environment Variables של הפרויקט את `VITE_SUPABASE_URL` ו-`VITE_SUPABASE_ANON_KEY` (כבר לא בשימוש). סודות ה-Production יוגדרו רק ב-M6. האתר החי הנוכחי (הגרסה הישנה עם ההתחברות) יישאר כמו שהוא עד M6, כי Auto-Deploy יכובה.
+3. **ה-Supabase MCP:** אם הכלים שלו לא זמינים בשיחה, לפתוח את השיחה מחדש (ההתחברות כבר בוצעה).
 
-## 8. מה המשתמש עושה בעצמו (הדרכה צעד אחר צעד בזמן הבנייה)
+הגדרות ההתחברות שהוגדרו קודם ב-Supabase (המשתמש שנוצר, ביטול ההרשמה) כבר לא רלוונטיות. לא מוחקים אותן — אין להן השפעה.
 
-Claude עוצר ומדריך בשפה פשוטה. **Claude לא נוגע בסיסמאות ולא קורא את `.env`.**
+## 12. סדר העבודה בבנייה
 
-**א. Supabase — לפני שאפשר לבדוק התחברות (בזמן הבנייה):**
-1. יצירת חשבון ב-supabase.com (אם אין).
-2. יצירת שני פרויקטים: `expenses-dev` ו-`expenses-prod` (אזור קרוב, למשל Frankfurt/EU). לשמור את סיסמת מסד הנתונים במקום בטוח.
-3. בכל פרויקט: Authentication → Sign In / Providers → לכבות "Allow new users to sign up".
-4. בכל פרויקט: Authentication → Users → Add user → Create new user, עם אימייל וסיסמה, ו-"Auto Confirm User".
-5. בפרויקט ה-Development: Project Settings → API → להעתיק את Project URL ואת ה-anon / publishable key ל-`.env` המקומי. (לא את ה-service role!)
-6. Site URL בפרויקט ה-Development: `http://localhost:5173`.
+1. הסרת Tailwind וקוד ההתחברות; התקנת Zod ו-Testing Library; עדכון `tsconfig`, `vite.config.ts`, `vercel.json`, `.env.example`, `index.html`.
+2. `shared/` + בדיקות.
+3. **עצירה להדרכה (סעיף 11.1–11.3).**
+4. Migration: כתיבת הקובץ, הרצה על Development דרך ה-MCP, בדיקות סעיף 6.
+5. `api/` + בדיקות; Plugin ה-API בפיתוח.
+6. Layout, ניווט, עיצוב גלובלי, דפים ריקים.
+7. דף הבית: טופס, רשימה, מצבים; בדיקת הטופס.
+8. בדיקה בדפדפן מול Development: הוספות תקינות ושגויות, Reload, מצב כשל (עצירת ה-API), מחשב וטלפון.
+9. בדיקת סודות: חיפוש `sb_secret` וכתובת Supabase ב-`dist/` וב-Git; קריאת REST ישירה עם Publishable key נחסמת.
+10. ADR-ים (סעיף 2), עדכון "פקודות הרצה" ב-CLAUDE.md אם השתנו, סימון 🟡 ב-MILESTONES.md, סגירת השרת.
 
-**ב. Vercel — בזמן הדחיפה (באישור המשתמש, לא בזמן הבנייה):**
-1. התחברות ל-vercel.com עם GitHub, Import של ה-repo `itaygoldenberg/Expenses`. Vercel מזהה Vite אוטומטית.
-2. Environment Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — עם הערכים של פרויקט ה-**Production**.
-3. Deploy, ואז ב-Supabase Production: Authentication → URL Configuration → Site URL = כתובת Vercel.
-4. בדיקת האתר החי לפי ה-DoD.
-
-> הסדר: הבנייה והבדיקה המקומית מול Development בלבד. ה-push (שמפעיל את הפרסום ב-Vercel) רק כשהמשתמש מבקש "דחוף שינויים לגיטהאב". אין ב-Milestone זה שינויי מבנה במסד הנתונים, ולכן אין migration להריץ על Production.
-
-## 9. סדר העבודה בבנייה
-
-1. יצירת שלד Vite (React + TS) בשורש הפרויקט, בלי לגעת ב-`spec/`, `CLAUDE.md`, `.gitignore`. ניקוי קבצי הדוגמה של Vite.
-2. התקנת התלויות (סעיף 2).
-3. Tailwind + theme + Rubik + `lang="he" dir="rtl"`.
-4. `.env.example` + העתקה ל-`.env`; `lib/supabase.ts`.
-5. `AuthProvider`, `RequireAuth`, `LoginPage`, `authErrors` + בדיקות.
-6. `AppLayout`, `navItems`, `PageTitle`, מסכים ריקים, `MorePage` עם התנתקות; נתיבים ב-`App.tsx`.
-7. `vercel.json`.
-8. Vitest: `npm test` עובר; `npm run build` עובר בלי שגיאות TypeScript.
-9. **עצירה להדרכת Supabase (סעיף 8א)** — אחרי שהמשתמש מילא `.env`, בדיקה בדפדפן: מסך התחברות, סיסמה שגויה, כניסה, ניווט בטלפון (375px) ובמחשב, התנתקות + רענון, רענון בתוך `/transactions` ב-`npm run preview`.
-10. מילוי "פקודות הרצה" ב-CLAUDE.md (`npm run dev`, `npm test`), סימון 🟡 ב-MILESTONES.md, סגירת השרת.
-11. ADR קצר ב-ARCHITECTURE.md: Tailwind v4 עם `@tailwindcss/vite` ו-React Router v7 (library mode) — רק אם מתקבלת החלטה שחורגת מהכתוב.
-
-## 10. בדיקה מול Definition of Done
+## 13. בדיקה מול Definition of Done
 
 | תנאי | איך נבדק |
 |------|----------|
-| פתיחה מקומית בלי התחברות → מסך התחברות | `npm run dev`, פתיחת `/` ו-`/transactions` בחלון נקי → הפניה ל-`/login` |
-| סיסמה שגויה → "אימייל או סיסמה שגויים" | ניסיון עם סיסמה שגויה מול Development |
-| אחרי התחברות → מסך הסיכום הריק, הכל בעברית ומיושר לימין | בדיקה ויזואלית |
-| טלפון: סרגל בתחתית; מחשב: תפריט צד מימין; כל לשונית מעבירה למסך שלה | רוחב 375px ו-1280px, לחיצה על כל לשונית + קטגוריות/ייבוא דרך "עוד" |
-| התנתקות → מסך התחברות; רענון לא מחזיר פנימה | לחיצה על "התנתקות" ורענון |
-| אתר חי ב-Vercel: התחברות עם משתמש Production, מעבר בין מסכים, רענון במסך פנימי בלי שגיאה | **אחרי הדחיפה בלבד**, יחד עם המשתמש (`vercel.json` נבדק מקומית מראש ב-`npm run preview`) |
-| אין אפשרות להירשם | אין מסך/קישור הרשמה בקוד; ההרשמה מבוטלת בשני הפרויקטים (המשתמש מאשר שביצע) |
+| שני פרויקטי Supabase נפרדים; הפיתוח פונה ל-Development בלבד | `.env` מכיל רק Development (המשתמש מאשר); ה-MCP מוגבל ל-`project_ref` של Development |
+| Migration שמורה ב-Git והורצה ב-Development; טבלה, אילוצים והרשאות נבדקו | בדיקות סעיף 6 |
+| יצירת הוצאה עם אחת מ-11 הקטגוריות, תאריך היום כברירת מחדל, תיאור אופציונלי חוץ מ"אחר", סכום עד 2 ספרות | בדיקה בדפדפן + בדיקות אוטומטיות |
+| Frontend ו-Backend דוחים קלט שגוי (שדה חובה, "אחר" בלי תיאור, סכום לא חוקי / מעל ₪100,000, תאריך עתידי) | בדיקות טופס + בדיקות API + שליחה ישירה ל-API עם גוף שגוי |
+| הנתונים מה-API נשארים אחרי Reload; כשל API לא מוצג כאפס הוצאות או כהצלחה | Reload; עצירת ה-API / ניתוק ומעקב אחרי ההודעות |
+| אין Secrets בקוד, ב-Commit או ב-Bundle; קריאה ישירה לטבלה נחסמת | סעיף 12.9 |
+| בדיקות ו-Build עוברים; תוצאת בדיקה ידנית מוצגת למשתמש | `npm test`, `npm run build`, סיכום בסוף הבנייה |
