@@ -1,11 +1,12 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
+import { FiltersPage } from './pages/FiltersPage'
+import { AboutPage } from './pages/AboutPage'
 
-// Placeholder pages — their content is built in Milestones 3–5.
-const FiltersPage = () => <h1>סינון הוצאות</h1>
-const ReportsPage = () => <h1>דו"חות וניתוח הוצאות</h1>
-const AboutPage = () => <h1>אודות המערכת</h1>
+// The reports page pulls in the chart library; load it only when the page is opened
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 
 export function App() {
   return (
@@ -13,7 +14,14 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="filters" element={<FiltersPage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route
+          path="reports"
+          element={
+            <Suspense fallback={<p role="status">טוען נתונים…</p>}>
+              <ReportsPage />
+            </Suspense>
+          }
+        />
         <Route path="about" element={<AboutPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

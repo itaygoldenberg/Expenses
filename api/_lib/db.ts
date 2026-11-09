@@ -13,9 +13,15 @@ export function getDb(): postgres.Sql {
   sql = postgres(url, {
     ssl: 'require',
     prepare: false, // required by the transaction pooler (port 6543)
+    // Supabase's pooler (Supavisor) hangs on pipelined queries: answers never arrive.
+    // Send one query at a time per connection (see postgres.js README, "PgBouncer").
+    max_pipeline: 1,
     max: 1, // serverless: one connection per function instance
     idle_timeout: 20,
     connect_timeout: 10,
+    // Safety net: a pooler that stops answering rejects instead of hanging forever
+    query_timeout: 10,
+    queue_timeout: 15,
   })
   return sql
 }

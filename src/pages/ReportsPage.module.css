@@ -1,0 +1,63 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin-bottom: 0;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.metricSelect {
+  height: 44px;
+  min-width: 180px;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.chartCard {
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--deep-navy);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.chartTitle svg {
+  color: var(--cyan);
+}
+
+@media (min-width: 768px) {
+  /* Desktop: the two charts side by side */
+  .charts {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .chartCard {
+    padding: 20px 24px;
+  }
+}

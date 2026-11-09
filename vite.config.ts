@@ -80,6 +80,10 @@ async function toWebRequest(req: IncomingMessage, url: URL): Promise<Request> {
 
 export default defineConfig({
   plugins: [react(), devApi()],
+  build: {
+    // pdfmake (~770 kB) is its own chunk, loaded only when a PDF is downloaded (ADR-5)
+    chunkSizeWarningLimit: 800,
+  },
   test: {
     environment: 'node',
   },

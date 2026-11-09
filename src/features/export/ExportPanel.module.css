@@ -1,0 +1,43 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title svg {
+  color: var(--cyan);
+}
+
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.scopeSelect {
+  height: 44px;
+  min-width: 200px;
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--deep-navy);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-light);
+}
+
+.pdfButton {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}

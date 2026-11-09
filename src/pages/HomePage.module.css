@@ -57,6 +57,23 @@
   border: 1px solid rgb(255 59 120 / 0.5);
 }
 
+.emptyBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--deep-navy);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-muted);
+}
+
+.link {
+  color: var(--cyan);
+}
+
 .secondary {
   min-height: 44px;
   padding: 0 20px;

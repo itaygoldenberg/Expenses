@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ListChecks, PlusCircle } from 'lucide-react'
 import type { Expense } from '../../shared/types'
-import { createExpense, deleteExpense, fetchExpenses, updateExpense } from '../api/client'
+import { createExpense, deleteExpense, updateExpense } from '../api/client'
+import { useExpenses } from '../hooks/useExpenses'
 import { ExpenseForm } from '../features/expenses/ExpenseForm'
 import { ExpenseList } from '../features/expenses/ExpenseList'
 import { EditExpenseModal } from '../features/expenses/EditExpenseModal'
@@ -10,15 +11,10 @@ import { DEFAULT_SORT, nextSort, sortExpenses, type SortState } from '../feature
 import { Toast, type ToastMessage } from '../components/Toast'
 import styles from './HomePage.module.css'
 
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'error' }
-  | { status: 'ready'; expenses: Expense[] }
-
 export const NOT_FOUND_MESSAGE = 'ההוצאה לא נמצאה — ייתכן שכבר נמחקה.'
 
 export function HomePage() {
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const { state, reload: load } = useExpenses()
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
   const [editing, setEditing] = useState<Expense | null>(null)
   const [deleting, setDeleting] = useState<Expense | null>(null)
@@ -30,20 +26,6 @@ export function HomePage() {
     setToast({ id: toastId.current, text, kind })
   }, [])
   const clearToast = useCallback(() => setToast(null), [])
-
-  // Initial load shows "loading"; reloads after a change keep the current list on screen
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setState({ status: 'loading' })
-    try {
-      setState({ status: 'ready', expenses: await fetchExpenses() })
-    } catch {
-      setState({ status: 'error' })
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
 
   const sorted = useMemo(
     () => (state.status === 'ready' ? sortExpenses(state.expenses, sort) : []),

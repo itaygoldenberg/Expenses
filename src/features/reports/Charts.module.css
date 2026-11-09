@@ -1,0 +1,71 @@
+.pieLayout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.pieCanvas {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  height: 240px;
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  flex: 1;
+}
+
+.legendValue {
+  font-weight: 600;
+}
+
+.barsLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.control {
+  flex: 1;
+  min-width: 140px;
+}
+
+.smallSelect {
+  height: 44px;
+}
+
+.barCanvas {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}

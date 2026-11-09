@@ -10,8 +10,9 @@ type Props = {
   sort: SortState
   onSortColumn: (key: SortKey) => void
   onSortChange: (sort: SortState) => void
-  onEdit: (expense: Expense) => void
-  onDelete: (expense: Expense) => void
+  /** When omitted (e.g. on the filters page), no edit/delete buttons are shown. */
+  onEdit?: (expense: Expense) => void
+  onDelete?: (expense: Expense) => void
 }
 
 function describe(e: Expense): string {
@@ -45,7 +46,15 @@ function SortHeader({
   )
 }
 
-function Actions({ expense, onEdit, onDelete }: { expense: Expense; onEdit: Props['onEdit']; onDelete: Props['onDelete'] }) {
+function Actions({
+  expense,
+  onEdit,
+  onDelete,
+}: {
+  expense: Expense
+  onEdit: NonNullable<Props['onEdit']>
+  onDelete: NonNullable<Props['onDelete']>
+}) {
   return (
     <div className={styles.actions}>
       <button
@@ -72,6 +81,7 @@ function Actions({ expense, onEdit, onDelete }: { expense: Expense; onEdit: Prop
 
 export function ExpenseList({ expenses, sort, onSortColumn, onSortChange, onEdit, onDelete }: Props) {
   const selected = SORT_OPTIONS.find((o) => o.sort.key === sort.key && o.sort.direction === sort.direction)
+  const withActions = Boolean(onEdit && onDelete)
 
   return (
     <>
@@ -84,7 +94,7 @@ export function ExpenseList({ expenses, sort, onSortColumn, onSortChange, onEdit
               <th scope="col">תיאור</th>
               <SortHeader label="קטגוריה" column="category" sort={sort} onSort={onSortColumn} />
               <SortHeader label="סכום (₪)" column="amount" sort={sort} onSort={onSortColumn} />
-              <th scope="col">פעולות</th>
+              {withActions && <th scope="col">פעולות</th>}
             </tr>
           </thead>
           <tbody>
@@ -98,9 +108,11 @@ export function ExpenseList({ expenses, sort, onSortColumn, onSortChange, onEdit
                 <td>
                   <span className="num">{displayAmount(e.amount)}</span>
                 </td>
-                <td>
-                  <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />
-                </td>
+                {onEdit && onDelete && (
+                  <td>
+                    <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -137,7 +149,7 @@ export function ExpenseList({ expenses, sort, onSortColumn, onSortChange, onEdit
                   <span className="num">{formatDisplayDate(e.expenseDate)}</span>
                 </p>
               </div>
-              <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />
+              {onEdit && onDelete && <Actions expense={e} onEdit={onEdit} onDelete={onDelete} />}
             </li>
           ))}
         </ul>
