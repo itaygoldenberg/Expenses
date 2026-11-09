@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
-import { CalendarDays, ChevronDown, Pencil, Plus } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Pencil, Plus, X } from 'lucide-react'
 import { CATEGORIES, OTHER_CATEGORY } from '../../../shared/categories'
 import { validateExpenseInput } from '../../../shared/expenseSchema'
 import { todayLocal } from '../../../shared/dates'
@@ -10,6 +10,12 @@ import styles from './ExpenseForm.module.css'
 type Props = {
   onSubmit: (input: ExpenseInput) => Promise<Expense>
   onSaved: (expense: Expense) => void
+  /** 'edit' keeps the values after saving and shows "שמירה" / "ביטול". */
+  mode?: 'create' | 'edit'
+  initialValues?: ExpenseInput
+  onCancel?: () => void
+  /** Called when the server says the expense no longer exists (404). */
+  onNotFound?: () => void
 }
 
 const emptyForm = (): ExpenseInput => ({
@@ -20,10 +26,17 @@ const emptyForm = (): ExpenseInput => ({
 })
 
 export const SAVE_FAILED_MESSAGE = 'השמירה נכשלה, ההוצאה לא נשמרה. נסו שוב.'
+export const UPDATE_FAILED_MESSAGE = 'העדכון נכשל, ההוצאה לא עודכנה. נסו שוב.'
 
-export function ExpenseForm({ onSubmit, onSaved }: Props) {
+/** Converts an expense from the API to form values. */
+export function expenseToInput(e: Expense): ExpenseInput {
+  return { category: e.category, description: e.description ?? '', amount: e.amount, expenseDate: e.expenseDate }
+}
+
+export function ExpenseForm({ onSubmit, onSaved, mode = 'create', initialValues, onCancel, onNotFound }: Props) {
   const id = useId()
-  const [values, setValues] = useState<ExpenseInput>(emptyForm)
+  const isEdit = mode === 'edit'
+  const [values, setValues] = useState<ExpenseInput>(() => initialValues ?? emptyForm())
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -55,14 +68,16 @@ export function ExpenseForm({ onSubmit, onSaved }: Props) {
     setSaving(true)
     try {
       const saved = await onSubmit(values)
-      setValues(emptyForm())
+      if (!isEdit) setValues(emptyForm())
       setErrors({})
       onSaved(saved)
     } catch (err) {
       if (err instanceof ApiRequestError && err.fields) {
         setErrors(err.fields)
+      } else if (err instanceof ApiRequestError && err.status === 404 && onNotFound) {
+        onNotFound()
       } else {
-        setSaveError(SAVE_FAILED_MESSAGE)
+        setSaveError(isEdit ? UPDATE_FAILED_MESSAGE : SAVE_FAILED_MESSAGE)
       }
     } finally {
       setSaving(false)
@@ -176,9 +191,15 @@ export function ExpenseForm({ onSubmit, onSaved }: Props) {
 
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={saving}>
-          {saving ? 'שומר…' : 'הוסף הוצאה'}
-          {!saving && <Plus size={18} aria-hidden="true" />}
+          {saving ? 'שומר…' : isEdit ? 'שמירה' : 'הוסף הוצאה'}
+          {!saving && (isEdit ? <Check size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />)}
         </button>
+        {isEdit && onCancel && (
+          <button type="button" className={styles.secondary} onClick={onCancel} disabled={saving}>
+            ביטול
+            <X size={18} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </form>
   )

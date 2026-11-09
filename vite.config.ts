@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import type { IncomingMessage } from 'node:http'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
@@ -22,7 +22,9 @@ function devApi(): Plugin {
         if (!url.pathname.startsWith('/api/')) return next()
 
         const base = path.join(process.cwd(), url.pathname)
-        const file = [`${base}.ts`, path.join(base, 'index.ts')].find((f) => existsSync(f))
+        const file =
+          [`${base}.ts`, path.join(base, 'index.ts')].find((f) => existsSync(f)) ??
+          findDynamicRoute(path.dirname(base))
         if (!file) {
           res.statusCode = 404
           res.setHeader('Content-Type', 'application/json')
@@ -52,6 +54,13 @@ function devApi(): Plugin {
       })
     },
   }
+}
+
+/** Vercel-style dynamic route: a file named like [id].ts in the given directory. */
+function findDynamicRoute(dir: string): string | undefined {
+  if (!existsSync(dir)) return undefined
+  const match = readdirSync(dir).find((name) => /^\[[^\]]+\]\.ts$/.test(name))
+  return match ? path.join(dir, match) : undefined
 }
 
 async function toWebRequest(req: IncomingMessage, url: URL): Promise<Request> {

@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, ListChecks, PlusCircle } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ListChecks, PlusCircle } from 'lucide-react'
 import type { Expense } from '../../shared/types'
-import { createExpense, fetchExpenses } from '../api/client'
+import { createExpense, deleteExpense, fetchExpenses, updateExpense } from '../api/client'
 import { ExpenseForm } from '../features/expenses/ExpenseForm'
 import { ExpenseList } from '../features/expenses/ExpenseList'
+import { EditExpenseModal } from '../features/expenses/EditExpenseModal'
+import { DeleteExpenseDialog } from '../features/expenses/DeleteExpenseDialog'
+import { DEFAULT_SORT, nextSort, sortExpenses, type SortState } from '../features/expenses/sortExpenses'
+import { Toast, type ToastMessage } from '../components/Toast'
 import styles from './HomePage.module.css'
 
 type LoadState =
@@ -11,12 +15,25 @@ type LoadState =
   | { status: 'error' }
   | { status: 'ready'; expenses: Expense[] }
 
+export const NOT_FOUND_MESSAGE = 'ההוצאה לא נמצאה — ייתכן שכבר נמחקה.'
+
 export function HomePage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [savedNotice, setSavedNotice] = useState(false)
+  const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
+  const [editing, setEditing] = useState<Expense | null>(null)
+  const [deleting, setDeleting] = useState<Expense | null>(null)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
+  const toastId = useRef(0)
 
-  const load = useCallback(async () => {
-    setState({ status: 'loading' })
+  const showToast = useCallback((text: string, kind: ToastMessage['kind'] = 'success') => {
+    toastId.current += 1
+    setToast({ id: toastId.current, text, kind })
+  }, [])
+  const clearToast = useCallback(() => setToast(null), [])
+
+  // Initial load shows "loading"; reloads after a change keep the current list on screen
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setState({ status: 'loading' })
     try {
       setState({ status: 'ready', expenses: await fetchExpenses() })
     } catch {
@@ -28,16 +45,21 @@ export function HomePage() {
     void load()
   }, [load])
 
-  useEffect(() => {
-    if (!savedNotice) return
-    const timer = setTimeout(() => setSavedNotice(false), 3000)
-    return () => clearTimeout(timer)
-  }, [savedNotice])
+  const sorted = useMemo(
+    () => (state.status === 'ready' ? sortExpenses(state.expenses, sort) : []),
+    [state, sort],
+  )
 
-  function handleSaved() {
-    setSavedNotice(true)
+  function afterChange(message: string, kind: ToastMessage['kind'] = 'success') {
+    showToast(message, kind)
     // Reload from the server so the list reflects what was actually stored
-    void load()
+    void load(false)
+  }
+
+  function handleNotFound() {
+    setEditing(null)
+    setDeleting(null)
+    afterChange(NOT_FOUND_MESSAGE, 'error')
   }
 
   return (
@@ -47,13 +69,7 @@ export function HomePage() {
           <PlusCircle size={22} aria-hidden="true" className={styles.titleIcon} />
           הוספת הוצאה
         </h2>
-        <ExpenseForm onSubmit={createExpense} onSaved={handleSaved} />
-        {savedNotice && (
-          <p className={styles.notice} role="status">
-            <CheckCircle2 size={18} aria-hidden="true" />
-            ההוצאה נשמרה
-          </p>
-        )}
+        <ExpenseForm onSubmit={createExpense} onSaved={() => afterChange('ההוצאה נשמרה')} />
       </section>
 
       <section className={styles.card} aria-labelledby="list-title">
@@ -81,8 +97,47 @@ export function HomePage() {
           <p className={styles.message}>עדיין אין הוצאות. אפשר להוסיף את הראשונה בטופס למעלה.</p>
         )}
 
-        {state.status === 'ready' && state.expenses.length > 0 && <ExpenseList expenses={state.expenses} />}
+        {state.status === 'ready' && state.expenses.length > 0 && (
+          <ExpenseList
+            expenses={sorted}
+            sort={sort}
+            onSortColumn={(key) => setSort((s) => nextSort(s, key))}
+            onSortChange={setSort}
+            onEdit={setEditing}
+            onDelete={setDeleting}
+          />
+        )}
       </section>
+
+      {editing && (
+        <EditExpenseModal
+          key={editing.id}
+          expense={editing}
+          onSubmit={updateExpense}
+          onSaved={() => {
+            setEditing(null)
+            afterChange('ההוצאה עודכנה')
+          }}
+          onNotFound={handleNotFound}
+          onClose={() => setEditing(null)}
+        />
+      )}
+
+      {deleting && (
+        <DeleteExpenseDialog
+          key={deleting.id}
+          expense={deleting}
+          onConfirm={deleteExpense}
+          onDeleted={() => {
+            setDeleting(null)
+            afterChange('ההוצאה נמחקה')
+          }}
+          onNotFound={handleNotFound}
+          onClose={() => setDeleting(null)}
+        />
+      )}
+
+      <Toast message={toast} onDone={clearToast} />
     </div>
   )
 }

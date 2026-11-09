@@ -135,7 +135,30 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: flex-start; /* right side in RTL, as in the wireframe */
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  width: 100%;
+  padding: 0 28px;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-light);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
 }
 
 .primary {
@@ -174,7 +197,8 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .primary {
+  .primary,
+  .secondary {
     width: auto;
   }
 }

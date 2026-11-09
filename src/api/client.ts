@@ -37,6 +37,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiRequestError(body?.error.message ?? 'error', response.status, body?.error.fields)
   }
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -46,4 +47,15 @@ export function fetchExpenses(): Promise<Expense[]> {
 
 export function createExpense(input: ExpenseInput): Promise<Expense> {
   return request<Expense>('/api/expenses', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export function updateExpense(id: string, input: ExpenseInput): Promise<Expense> {
+  return request<Expense>(`/api/expenses/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteExpense(id: string): Promise<void> {
+  return request<void>(`/api/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }

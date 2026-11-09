@@ -1,14 +1,8 @@
 import { getDb, isConstraintViolation } from '../_lib/db.js'
-import { errorResponse, json, readJsonBody, serverError, serviceUnavailable } from '../_lib/http.js'
+import { errorResponse, json, logError, readJsonBody, serverError, serviceUnavailable } from '../_lib/http.js'
 import { rowToExpense, type ExpenseRow } from '../_lib/expenseRow.js'
 import { validateExpenseInput } from '../../shared/expenseSchema.js'
 import { todayInJerusalem } from '../../shared/dates.js'
-
-function logError(where: string, err: unknown) {
-  // Log only the error code/name, never connection strings or query details
-  const code = (err as { code?: unknown })?.code
-  console.error(`${where} failed:`, typeof code === 'string' ? code : err instanceof Error ? err.name : 'unknown')
-}
 
 // GET /api/expenses — all expenses, newest first
 export async function GET(): Promise<Response> {

@@ -21,6 +21,35 @@ export const serverError = () =>
 export const serviceUnavailable = () =>
   errorResponse(503, 'SERVICE_UNAVAILABLE', 'השירות אינו זמין כרגע. נסו שוב מאוחר יותר.')
 
+export const notFound = () =>
+  errorResponse(404, 'NOT_FOUND', 'ההוצאה לא נמצאה')
+
+export const invalidId = () =>
+  errorResponse(400, 'INVALID_ID', 'מזהה ההוצאה אינו תקין')
+
+export const methodNotAllowed = () =>
+  errorResponse(405, 'METHOD_NOT_ALLOWED', 'פעולה לא נתמכת')
+
+export const noContent = () => new Response(null, { status: 204 })
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
+/** Last path segment of the request URL, e.g. /api/expenses/<id> → <id> */
+export function lastPathSegment(request: Request): string {
+  const parts = new URL(request.url).pathname.split('/').filter(Boolean)
+  return decodeURIComponent(parts[parts.length - 1] ?? '')
+}
+
+/** Logs only an error code/name, never connection strings or query details. */
+export function logError(where: string, err: unknown) {
+  const code = (err as { code?: unknown })?.code
+  console.error(`${where} failed:`, typeof code === 'string' ? code : err instanceof Error ? err.name : 'unknown')
+}
+
 /** Reads a JSON body with a size limit. Returns a Response on failure. */
 export async function readJsonBody(request: Request): Promise<{ ok: true; body: unknown } | { ok: false; response: Response }> {
   const text = await request.text()
